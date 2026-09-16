@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Defined directly here (rather than relying only on the Tailwind config
+   theme.extend.animation utility) so the hero scroll keeps working even if
+   the dev server hasn't picked up a tailwind.config.js change yet. */
+@keyframes hero-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-hero-scroll {
+  animation: hero-scroll 40s linear infinite;
+}
+
+@keyframes float-orb {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(24px, -32px) scale(1.08);
+  }
+}
+
+@keyframes float-orb-slow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-28px, 26px) scale(1.05);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-float-orb {
+  animation: float-orb 11s ease-in-out infinite;
+}
+
+.animate-float-orb-slow {
+  animation: float-orb-slow 16s ease-in-out infinite;
+}
+
+.animate-marquee {
+  animation: marquee 24s linear infinite;
+}
+
+/* Gradient text used sparingly on hero/CTA headings for a bit of shine on
+   an otherwise flat purple-on-black palette. */
+.text-gradient-brand {
+  background-image: linear-gradient(135deg, #f0abfc, #c084fc 45%, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Pure-CSS 3D tilt for product/media cards — no JS, just a perspective
+   transform on hover, so it degrades to a plain hover state anywhere
+   transforms are disabled (prefers-reduced-motion below). */
+.tilt-card {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  transform: perspective(1000px) rotateX(0) rotateY(0);
+}
+
+.tilt-card:hover {
+  transform: perspective(1000px) rotateX(4deg) rotateY(-4deg) translateY(-4px) scale(1.015);
+  box-shadow: 0 24px 48px -16px rgba(168, 85, 247, 0.45);
+}
+
+.btn-glow {
+  background-image: linear-gradient(135deg, #7c3aed, #a855f7 55%, #d946ef);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 32px -4px rgba(192, 132, 252, 0.65);
+}
+
+/* Fixed, low-opacity SVG-noise film over the whole app for a bit of the
+   grunge texture the client asked for — pointer-events-none so it never
+   intercepts clicks, and blended in softly rather than as a flat overlay. */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.reveal-on-scroll {
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-scroll,
+  .animate-float-orb,
+  .animate-float-orb-slow,
+  .animate-marquee {
+    animation: none;
+  }
+
+  .tilt-card,
+  .tilt-card:hover {
+    transform: none;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
