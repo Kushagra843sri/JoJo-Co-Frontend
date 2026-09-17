@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
@@ -11,10 +11,20 @@ const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 const Catalog = () => {
   const dispatch = useDispatch();
   const { products, isLoading, error } = useSelector((state) => state.products);
+  const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // Seeds/updates the filter from ?category= so a Sidebar category link (e.g.
+  // /catalog?category=Denim) lands pre-filtered. Watches searchParams rather
+  // than reading it only once, since React Router reuses this same component
+  // instance (doesn't remount) when navigating from one /catalog?category=
+  // link to another — a one-time initializer would miss that second click.
+  useEffect(() => {
+    setSelectedCategory(searchParams.get('category') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

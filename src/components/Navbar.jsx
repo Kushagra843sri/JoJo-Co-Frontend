@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar.jsx';
 
-// One nav layout at every screen size: hamburger + "Shop Now" on the left,
-// the brand name centered (absolutely positioned so it stays dead-center
+// One nav layout at every screen size: the hamburger alone on the left (it
+// opens the Sidebar drawer, which is the only place category/shop links
+// live now — no duplicate "Shop Now" floating outside the drawer), the
+// brand name centered (absolutely positioned so it stays dead-center
 // regardless of how wide the left/right groups are), Sign In/Bag on the
 // right — no separate desktop-vs-mobile modes, and no logo image (removed
 // per the client's request; the wordmark alone is the identity now).
@@ -16,6 +18,7 @@ const Navbar = () => {
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
+    <>
     <nav className="fixed top-0 inset-x-0 z-50 h-20 bg-ink/95 backdrop-blur border-b border-white/10 flex items-center justify-between px-4 sm:px-8">
       <div className="flex items-center gap-2 sm:gap-4 z-10">
         <button
@@ -28,12 +31,6 @@ const Navbar = () => {
             <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
           </svg>
         </button>
-        <Link
-          to="/catalog"
-          className="text-[11px] sm:text-sm uppercase tracking-widest text-white/70 whitespace-nowrap transition-colors duration-300 hover:text-brand"
-        >
-          Shop Now
-        </Link>
       </div>
 
       <Link
@@ -76,13 +73,18 @@ const Navbar = () => {
           )}
         </Link>
       </div>
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        isAdmin={isAuthenticated && user?.role === 'admin'}
-      />
     </nav>
+
+    {/* Rendered as a sibling of <nav>, not a descendant — nav's own
+        backdrop-blur establishes a new containing block for fixed-position
+        descendants, which silently breaks this drawer's h-full (it would
+        resolve against nav's own 80px height instead of the viewport). */}
+    <Sidebar
+      isOpen={isSidebarOpen}
+      onClose={() => setIsSidebarOpen(false)}
+      isAdmin={isAuthenticated && user?.role === 'admin'}
+    />
+    </>
   );
 };
 
