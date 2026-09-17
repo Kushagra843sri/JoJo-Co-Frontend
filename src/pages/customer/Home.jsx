@@ -107,12 +107,6 @@ const Home = () => {
           <p className="text-white/60 max-w-md text-base">
             Considered fabrics. Structured silhouettes. Built to outlast the trend cycle.
           </p>
-          <Link
-            to="/catalog"
-            className="mt-4 rounded-full btn-glow text-white px-10 py-4 text-sm uppercase tracking-widest shadow-lg transition-all duration-300 hover:scale-105 active:scale-100"
-          >
-            Shop the Collection
-          </Link>
         </div>
       </section>
 

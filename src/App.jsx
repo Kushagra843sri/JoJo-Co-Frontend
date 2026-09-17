@@ -11,6 +11,8 @@ import OrderResult from './pages/customer/OrderResult.jsx';
 import OrderHistory from './pages/customer/OrderHistory.jsx';
 import AuthPage from './pages/customer/AuthPage.jsx';
 import VerifyEmail from './pages/customer/VerifyEmail.jsx';
+import ForgotPassword from './pages/customer/ForgotPassword.jsx';
+import ResetPassword from './pages/customer/ResetPassword.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import ProductForm from './pages/admin/ProductForm.jsx';
 import OrderControl from './pages/admin/OrderControl.jsx';
@@ -51,6 +53,8 @@ function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           path="/checkout"

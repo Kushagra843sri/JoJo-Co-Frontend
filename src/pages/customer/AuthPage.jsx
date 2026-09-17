@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, registerUser } from '../../store/slices/authSlice.js';
 import Navbar from '../../components/Navbar.jsx';
@@ -95,7 +95,17 @@ const AuthPage = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-widest text-white/40">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs uppercase tracking-widest text-white/40">Password</label>
+                {isLogin && (
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-white/40 transition-colors duration-300 hover:text-brand"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 type="password"
                 name="password"
