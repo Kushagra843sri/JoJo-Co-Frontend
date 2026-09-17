@@ -395,7 +395,7 @@ const OrderHistory = () => {
       <div className="grain-overlay" />
       <Navbar />
 
-      <div className="pt-20 grid grid-cols-1 lg:grid-cols-12 gap-8 px-8 py-8">
+      <div className="pt-20 grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-8 py-8">
         {/* Left account sidebar */}
         <aside className="lg:col-span-3">
           <nav className="flex flex-col">

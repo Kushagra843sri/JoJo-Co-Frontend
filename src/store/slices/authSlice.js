@@ -1,6 +1,22 @@
 import { createSlice } from '@reduxjs/toolkit';
 import api from '../../utils/api.js';
 
+// A request that never got a response (network drop, or the backend still
+// booting from an idle/cold-start state on free hosting tiers) looks
+// identical to axios as any other failure — err.response is just undefined.
+// Surfacing that as "Registration failed"/"Invalid email or password" reads
+// as a rejection when the truth is "we don't know yet, the server didn't
+// answer in time." Distinguishing it here means the account/login attempt
+// might actually still be inflight (see PRODUCTION_DEPLOYMENT.md's Render
+// free-tier cold-start caveat), so tell the user to wait, not to fix their input.
+const describeAuthError = (err, fallback) => {
+  if (err.response?.data?.message) return err.response.data.message;
+  if (!err.response) {
+    return "Couldn't reach the server — it may be waking up after a period of inactivity. Please wait a few seconds and try again.";
+  }
+  return fallback;
+};
+
 const loadCachedUser = () => {
   try {
     const cached = localStorage.getItem('user');
@@ -78,8 +94,7 @@ export const registerUser = (userData) => async (dispatch) => {
     localStorage.setItem('user', JSON.stringify(data));
     dispatch(loginSuccess(data));
   } catch (err) {
-    const message = err.response?.data?.message || 'Registration failed';
-    dispatch(loginFailure(message));
+    dispatch(loginFailure(describeAuthError(err, 'Registration failed')));
   }
 };
 
@@ -90,8 +105,7 @@ export const loginUser = (credentials) => async (dispatch) => {
     localStorage.setItem('user', JSON.stringify(data));
     dispatch(loginSuccess(data));
   } catch (err) {
-    const message = err.response?.data?.message || 'Invalid email or password';
-    dispatch(loginFailure(message));
+    dispatch(loginFailure(describeAuthError(err, 'Invalid email or password')));
   }
 };
 
@@ -102,8 +116,7 @@ export const updateProfile = (profileData) => async (dispatch) => {
     localStorage.setItem('user', JSON.stringify(data));
     dispatch(updateProfileSuccess(data));
   } catch (err) {
-    const message = err.response?.data?.message || 'Failed to update profile';
-    dispatch(updateProfileFailure(message));
+    dispatch(updateProfileFailure(describeAuthError(err, 'Failed to update profile')));
   }
 };
 

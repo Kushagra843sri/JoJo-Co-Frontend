@@ -110,7 +110,7 @@ const Checkout = () => {
       <div className="w-full min-h-screen flex flex-col bg-ink">
         <div className="grain-overlay" />
         <Navbar />
-        <div className="flex-1 flex items-center justify-center px-8 py-16 pt-32">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-16 pt-32">
           <div className="w-full max-w-md border border-white/10 p-8 flex flex-col items-center gap-6 text-center">
             <h1 className="font-serif text-2xl text-brand">Verify Your Email to Check Out</h1>
             <p className="text-sm text-white/60">
@@ -140,7 +140,7 @@ const Checkout = () => {
       <div className="grain-overlay" />
       <Navbar />
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12 px-8 pt-28 pb-8">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12 px-4 sm:px-8 pt-28 pb-8">
         {/* Left column — shipping + payment */}
         <div className="lg:col-span-7 flex flex-col gap-8">
           <div className="flex flex-col gap-6">

@@ -36,7 +36,7 @@ const VerifyEmail = () => {
     <div className="w-full min-h-screen flex flex-col bg-ink">
       <div className="grain-overlay" />
       <Navbar />
-      <div className="flex-1 flex items-center justify-center px-8 py-16 pt-32">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-16 pt-32">
         <div className="w-full max-w-md border border-white/10 p-8 flex flex-col items-center gap-6 text-center">
           <h1 className="font-serif text-2xl text-brand">
             {status === 'success' ? 'Email Verified' : status === 'error' ? 'Verification Failed' : 'One Moment'}

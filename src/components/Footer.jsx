@@ -16,7 +16,7 @@ const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative w-full bg-ink text-white/60 border-t border-white/10 px-8 py-16 overflow-hidden">
+    <footer className="relative w-full bg-ink text-white/60 border-t border-white/10 px-4 sm:px-8 py-16 overflow-hidden">
       <GlowOrbs />
       <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
         <div className="flex flex-col gap-4">

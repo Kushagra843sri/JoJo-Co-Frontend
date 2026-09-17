@@ -36,7 +36,7 @@ const Catalog = () => {
       <div className="grain-overlay" />
       <Navbar />
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-8 pt-28 pb-8">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 sm:px-8 pt-28 pb-8">
         {/* Left filter sidebar */}
         <aside className="md:col-span-3 flex flex-col gap-8">
           <div className="flex flex-col gap-4">

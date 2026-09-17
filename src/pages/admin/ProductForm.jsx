@@ -200,7 +200,7 @@ const ProductForm = () => {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-8 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-8 py-8">
         <AdminSidebar />
 
         {/* Right workspace form panel */}

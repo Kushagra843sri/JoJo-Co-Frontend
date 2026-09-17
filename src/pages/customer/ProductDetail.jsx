@@ -139,17 +139,17 @@ const ProductDetail = () => {
 
       <div className="pt-20">
       {isLoading && (
-        <p className="px-8 py-8 text-sm uppercase tracking-widest text-white/40 animate-pulse">
+        <p className="px-4 sm:px-8 py-8 text-sm uppercase tracking-widest text-white/40 animate-pulse">
           Loading product...
         </p>
       )}
 
       {error && (
-        <div className="mx-8 my-8 border border-red-500/40 bg-red-950/40 text-red-300 text-sm px-4 py-4">{error}</div>
+        <div className="mx-4 sm:mx-8 my-8 border border-red-500/40 bg-red-950/40 text-red-300 text-sm px-4 py-4">{error}</div>
       )}
 
       {!isLoading && !error && currentProduct && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-8 py-8">
           {/* Left column — image gallery */}
           <div className="lg:col-span-6 flex flex-col gap-4">
             <div className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5">

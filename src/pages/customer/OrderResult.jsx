@@ -41,7 +41,7 @@ const OrderResult = () => {
       <div className="grain-overlay" />
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-8 py-16 pt-32">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-16 pt-32">
         <div className="w-full max-w-md border border-white/10 p-8 flex flex-col items-center gap-6 text-center">
           {isMyOrdersLoading && (
             <p className="text-sm uppercase tracking-widest text-white/40 animate-pulse">

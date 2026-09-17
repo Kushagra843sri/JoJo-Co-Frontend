@@ -95,7 +95,7 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-ink" />
 
         <div
-          className="relative z-10 flex flex-col items-center text-center gap-6 px-8 transition-transform duration-150 ease-out will-change-transform"
+          className="relative z-10 flex flex-col items-center text-center gap-6 px-4 sm:px-8 transition-transform duration-150 ease-out will-change-transform"
           style={{ transform: `rotateX(${heroTilt.y}deg) rotateY(${heroTilt.x}deg)` }}
         >
           <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">
@@ -121,7 +121,7 @@ const Home = () => {
       {/* About the company */}
       <section
         ref={aboutRef}
-        className={`reveal-on-scroll ${aboutVisible ? 'is-visible' : ''} relative w-full px-8 py-20 bg-ink overflow-hidden`}
+        className={`reveal-on-scroll ${aboutVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-20 bg-ink overflow-hidden`}
       >
         <GlowOrbs />
         <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center gap-6">
@@ -143,7 +143,7 @@ const Home = () => {
       {/* Category navigation strip */}
       <section
         ref={categoryRef}
-        className={`reveal-on-scroll ${categoryVisible ? 'is-visible' : ''} w-full px-8 py-16`}
+        className={`reveal-on-scroll ${categoryVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {categories.map((category) => (
@@ -164,7 +164,7 @@ const Home = () => {
       {/* New Arrivals product grid */}
       <section
         ref={arrivalsRef}
-        className={`reveal-on-scroll ${arrivalsVisible ? 'is-visible' : ''} w-full px-8 py-16`}
+        className={`reveal-on-scroll ${arrivalsVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
       >
         <div className="flex items-baseline justify-between mb-12">
           <h2 className="font-serif text-3xl text-brand">New Arrivals</h2>
@@ -213,7 +213,7 @@ const Home = () => {
       {/* Testimonials */}
       <section
         ref={testimonialsRef}
-        className={`reveal-on-scroll ${testimonialsVisible ? 'is-visible' : ''} relative w-full px-8 py-16 bg-surface overflow-hidden`}
+        className={`reveal-on-scroll ${testimonialsVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-16 bg-surface overflow-hidden`}
       >
         <GlowOrbs />
         <div className="relative z-10 flex flex-col items-center text-center gap-2 mb-12">
@@ -238,7 +238,7 @@ const Home = () => {
       {/* Join The Cult — Instagram CTA */}
       <section
         ref={cultRef}
-        className={`reveal-on-scroll ${cultVisible ? 'is-visible' : ''} relative w-full px-8 py-24 bg-black border-y border-white/10 flex flex-col items-center text-center gap-6 overflow-hidden`}
+        className={`reveal-on-scroll ${cultVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-24 bg-black border-y border-white/10 flex flex-col items-center text-center gap-6 overflow-hidden`}
       >
         <GlowOrbs />
         <span className="relative z-10 font-mono text-xs tracking-[0.2em] uppercase text-white/40">

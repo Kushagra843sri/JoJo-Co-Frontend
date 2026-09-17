@@ -16,7 +16,7 @@ const Cart = () => {
       <div className="grain-overlay" />
       <Navbar />
 
-      <div className="pt-28 px-8 pb-16">
+      <div className="pt-28 px-4 sm:px-8 pb-16">
         <div className="flex items-center justify-between mb-12">
           <h1 className="font-serif text-3xl text-brand">Your Shopping Bag</h1>
           <Link
