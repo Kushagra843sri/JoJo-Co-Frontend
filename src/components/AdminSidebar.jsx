@@ -15,17 +15,17 @@ const AdminSidebar = () => {
 
   return (
     <aside className="lg:col-span-3">
-      <nav className="flex flex-col">
+      <nav className="flex flex-col border border-white/10 bg-surface/40 overflow-hidden">
         {adminTabs.map((tab) => {
           const isActive = tab.path === location.pathname;
           return (
             <Link
               key={tab.id}
               to={tab.path}
-              className={`text-left px-6 py-4 text-sm transition-colors duration-300 ${
+              className={`text-left px-6 py-4 text-sm transition-colors duration-300 border-l-2 ${
                 isActive
-                  ? 'border-l-4 border-[#2F5DA8] font-semibold text-[#2F5DA8] bg-stone-50'
-                  : 'border-l-4 border-transparent text-stone-600 hover:text-[#2F5DA8]'
+                  ? 'border-brand font-semibold text-brand bg-brand/10'
+                  : 'border-transparent text-white/50 hover:text-white hover:bg-white/5'
               }`}
             >
               {tab.label}
@@ -35,7 +35,7 @@ const AdminSidebar = () => {
         <button
           type="button"
           onClick={() => dispatch(logoutUser())}
-          className="text-left px-6 py-4 text-sm border-l-4 border-transparent text-stone-600 transition-colors duration-300 hover:text-[#2F5DA8]"
+          className="text-left px-6 py-4 text-sm border-l-2 border-transparent text-white/50 transition-colors duration-300 hover:text-white hover:bg-white/5"
         >
           Sign Out
         </button>

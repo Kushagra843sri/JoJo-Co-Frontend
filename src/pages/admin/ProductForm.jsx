@@ -11,11 +11,10 @@ const categoryOptions = ['Outerwear', 'Knitwear', 'Denim', 'Shirting', 'Accessor
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
 
-const labelClasses = 'text-xs uppercase tracking-widest text-stone-500';
+const labelClasses = 'text-xs uppercase tracking-widest text-white/40';
 const inputClasses =
-  'w-full border border-stone-300 px-4 py-4 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60';
-const textareaClasses =
-  'w-full border border-stone-300 px-4 py-4 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60';
+  'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60';
+const textareaClasses = inputClasses;
 
 // Lazily injects Cloudinary's real upload widget script, caching window.cloudinary
 // so repeated calls (mount preload + the button click) never re-inject it.
@@ -199,19 +198,19 @@ const ProductForm = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-ink min-h-screen">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-8 py-8">
         <AdminSidebar />
 
         {/* Right workspace form panel */}
         <section className="lg:col-span-9 flex flex-col gap-8">
-          <h1 className="font-serif text-3xl text-[#2F5DA8]">Publishing Terminal</h1>
+          <h1 className="font-serif text-3xl text-brand">Publishing Terminal</h1>
 
           {error && (
-            <div className="border border-red-400 bg-red-50 text-red-700 text-sm px-4 py-4">{error}</div>
+            <div className="border border-red-500/40 bg-red-950/40 text-red-300 text-sm px-4 py-4">{error}</div>
           )}
           {success && (
-            <div className="border border-emerald-400 bg-emerald-50 text-emerald-700 text-sm px-4 py-4">
+            <div className="border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 text-sm px-4 py-4">
               Product published to the live catalog.
             </div>
           )}
@@ -281,7 +280,7 @@ const ProductForm = () => {
                     value={formData.category}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={inputClasses}
+                    className={`${inputClasses} bg-ink`}
                   >
                     <option value="" disabled>
                       Select a category
@@ -301,7 +300,7 @@ const ProductForm = () => {
                     value={formData.subcategory}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className={inputClasses}
+                    className={`${inputClasses} bg-ink`}
                   >
                     <option value="" disabled>
                       Select a subcategory
@@ -329,9 +328,9 @@ const ProductForm = () => {
               {/* Right form column — apparel data matrices */}
               <div className="lg:col-span-6 flex flex-col gap-8">
                 {/* Section A — shared lookbook photo(s) */}
-                <div className="border border-stone-200 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-[#2F5DA8]">Lookbook Photo</h2>
-                  <p className="text-xs text-stone-500 -mt-2">
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Lookbook Photo</h2>
+                  <p className="text-xs text-white/40 -mt-2">
                     Shared across every shade below — the product page tints this same photo live per shade rather
                     than needing a reshoot per color.
                   </p>
@@ -340,7 +339,7 @@ const ProductForm = () => {
                       type="button"
                       onClick={handleOpenUploadWidget}
                       disabled={isSubmitting}
-                      className="border border-[#2F5DA8] text-[#2F5DA8] px-4 py-4 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-[#2F5DA8] hover:text-white disabled:opacity-60"
+                      className="border border-brand text-brand px-4 py-4 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-brand hover:text-white disabled:opacity-60"
                     >
                       Upload Lookbook Image
                     </button>
@@ -348,7 +347,7 @@ const ProductForm = () => {
                     {uploadedImages.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {uploadedImages.map((url) => (
-                          <div key={url} className="aspect-square overflow-hidden bg-stone-100">
+                          <div key={url} className="aspect-square overflow-hidden bg-white/5">
                             <img src={url} alt="Uploaded lookbook asset" className="h-full w-full object-cover" />
                           </div>
                         ))}
@@ -358,9 +357,9 @@ const ProductForm = () => {
                 </div>
 
                 {/* Section B — shade card definitions */}
-                <div className="border border-stone-200 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-[#2F5DA8]">Shade Card</h2>
-                  <p className="text-xs text-stone-500 -mt-2">
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Shade Card</h2>
+                  <p className="text-xs text-white/40 -mt-2">
                     Each shade needs an exact color so its swatch and live preview tint match. Reference it from a
                     variant row below.
                   </p>
@@ -372,7 +371,7 @@ const ProductForm = () => {
                           value={shade.hex}
                           onChange={(e) => handleShadeChange(shade.id, 'hex', e.target.value)}
                           disabled={isSubmitting}
-                          className="h-10 w-10 flex-none border border-stone-300 disabled:opacity-60"
+                          className="h-10 w-10 flex-none border border-white/15 bg-transparent disabled:opacity-60"
                           aria-label={`${shade.name || 'Shade'} color`}
                         />
                         <input
@@ -381,15 +380,15 @@ const ProductForm = () => {
                           onChange={(e) => handleShadeChange(shade.id, 'name', e.target.value)}
                           disabled={isSubmitting}
                           placeholder="Jet Black"
-                          className="flex-1 border border-stone-300 px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60"
+                          className="flex-1 bg-transparent border border-white/15 px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                         />
-                        <span className="w-20 flex-none font-mono text-xs uppercase text-stone-400">{shade.hex}</span>
+                        <span className="w-20 flex-none font-mono text-xs uppercase text-white/40">{shade.hex}</span>
                         <button
                           type="button"
                           onClick={() => removeShadeRow(shade.id)}
                           disabled={isSubmitting || shades.length <= 1}
                           aria-label="Remove shade"
-                          className="h-8 w-8 flex-none flex items-center justify-center border border-stone-300 text-stone-400 transition-colors duration-300 hover:border-red-400 hover:text-red-500 disabled:opacity-40"
+                          className="h-8 w-8 flex-none flex items-center justify-center border border-white/15 text-white/40 transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
                         >
                           ✕
                         </button>
@@ -400,19 +399,19 @@ const ProductForm = () => {
                     type="button"
                     onClick={addShadeRow}
                     disabled={isSubmitting}
-                    className="border border-stone-300 text-stone-600 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-[#2F5DA8] hover:text-[#2F5DA8] disabled:opacity-60 self-start"
+                    className="border border-white/15 text-white/60 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60 self-start"
                   >
                     + Add Shade
                   </button>
                 </div>
 
                 {/* Section B — inventory variant matrix */}
-                <div className="border border-stone-200 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-[#2F5DA8]">Inventory Variant Matrix</h2>
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Inventory Variant Matrix</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-stone-200 text-left text-xs uppercase tracking-widest text-stone-500">
+                        <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-white/40">
                           <th className="py-4 pr-6 font-medium">Shade</th>
                           <th className="py-4 pr-6 font-medium">Size</th>
                           <th className="py-4 pr-6 font-medium">SKU</th>
@@ -422,13 +421,13 @@ const ProductForm = () => {
                       </thead>
                       <tbody>
                         {variants.map((row) => (
-                          <tr key={row.id} className="border-b border-stone-200">
+                          <tr key={row.id} className="border-b border-white/10">
                             <td className="py-4 pr-6">
                               <select
                                 value={row.shadeId || ''}
                                 onChange={(e) => handleVariantChange(row.id, 'shadeId', e.target.value)}
                                 disabled={isSubmitting}
-                                className="border border-stone-300 px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60"
+                                className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               >
                                 <option value="" disabled>
                                   Select a shade
@@ -445,7 +444,7 @@ const ProductForm = () => {
                                 value={row.size}
                                 onChange={(e) => handleVariantChange(row.id, 'size', e.target.value)}
                                 disabled={isSubmitting}
-                                className="border border-stone-300 px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60"
+                                className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               >
                                 {sizeOptions.map((size) => (
                                   <option key={size} value={size}>
@@ -460,7 +459,7 @@ const ProductForm = () => {
                                 value={row.sku}
                                 onChange={(e) => handleVariantChange(row.id, 'sku', e.target.value)}
                                 disabled={isSubmitting}
-                                className="w-full border border-stone-300 px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60"
+                                className="w-full bg-transparent border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               />
                             </td>
                             <td className="py-4 pr-6">
@@ -470,10 +469,10 @@ const ProductForm = () => {
                                 value={row.stock}
                                 onChange={(e) => handleVariantChange(row.id, 'stock', e.target.value)}
                                 disabled={isSubmitting}
-                                className="w-24 border border-stone-300 px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-[#2F5DA8] transition-colors duration-300 disabled:opacity-60"
+                                className="w-24 bg-transparent border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               />
                               {Number(row.stock) === 0 && (
-                                <p className="mt-1 text-[10px] uppercase tracking-widest text-amber-600">
+                                <p className="mt-1 text-[10px] uppercase tracking-widest text-amber-400">
                                   0 stock shows as "Out of Stock"
                                 </p>
                               )}
@@ -484,7 +483,7 @@ const ProductForm = () => {
                                 onClick={() => removeVariantRow(row.id)}
                                 disabled={isSubmitting}
                                 aria-label="Remove variant row"
-                                className="h-8 w-8 flex items-center justify-center border border-stone-300 text-stone-400 transition-colors duration-300 hover:border-red-400 hover:text-red-500 disabled:opacity-60"
+                                className="h-8 w-8 flex items-center justify-center border border-white/15 text-white/40 transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-60"
                               >
                                 ✕
                               </button>
@@ -498,7 +497,7 @@ const ProductForm = () => {
                     type="button"
                     onClick={addVariantRow}
                     disabled={isSubmitting}
-                    className="border border-stone-300 text-stone-600 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-[#2F5DA8] hover:text-[#2F5DA8] disabled:opacity-60 self-start"
+                    className="border border-white/15 text-white/60 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60 self-start"
                   >
                     + Add Variant Row
                   </button>
@@ -509,23 +508,23 @@ const ProductForm = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-4 w-full bg-[#2F5DA8] text-white py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:bg-opacity-90 active:scale-[0.98] disabled:opacity-60"
+              className="mt-4 w-full btn-glow text-white py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:hover:scale-100"
             >
               {isSubmitting ? 'Publishing to Live Catalog...' : 'Publish Clothing Article to Live Catalog'}
             </button>
           </form>
 
           {/* Published products — inventory management */}
-          <div className="border border-stone-200 p-6 flex flex-col gap-6">
-            <h2 className="font-serif text-lg text-[#2F5DA8]">Published Products</h2>
+          <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+            <h2 className="font-serif text-lg text-brand">Published Products</h2>
 
             {products.length === 0 ? (
-              <p className="text-sm text-stone-500">No products published yet.</p>
+              <p className="text-sm text-white/50">No products published yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-stone-200 text-left text-xs uppercase tracking-widest text-stone-500">
+                    <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-white/40">
                       <th className="py-4 pr-6 font-medium">Title</th>
                       <th className="py-4 pr-6 font-medium">Category</th>
                       <th className="py-4 pr-6 font-medium">Price</th>
@@ -537,14 +536,14 @@ const ProductForm = () => {
                     {products.map((product) => {
                       const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
                       return (
-                        <tr key={product._id} className="border-b border-stone-200">
-                          <td className="py-4 pr-6 text-stone-700">{product.title}</td>
-                          <td className="py-4 pr-6 text-stone-500">{product.category}</td>
-                          <td className="py-4 pr-6 font-mono text-stone-700">
+                        <tr key={product._id} className="border-b border-white/10">
+                          <td className="py-4 pr-6 text-white/80">{product.title}</td>
+                          <td className="py-4 pr-6 text-white/50">{product.category}</td>
+                          <td className="py-4 pr-6 font-mono text-white/80">
                             ₹{product.salePrice ?? product.basePrice}
                           </td>
                           <td className="py-4 pr-6">
-                            <span className={totalStock === 0 ? 'text-red-600' : 'text-stone-700'}>
+                            <span className={totalStock === 0 ? 'text-red-400' : 'text-white/80'}>
                               {totalStock}
                             </span>
                           </td>
@@ -553,7 +552,7 @@ const ProductForm = () => {
                               type="button"
                               onClick={() => handleDelete(product)}
                               disabled={deletingId === product._id}
-                              className="border border-stone-300 text-stone-500 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-red-400 hover:text-red-500 disabled:opacity-60"
+                              className="border border-white/15 text-white/50 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-60"
                             >
                               {deletingId === product._id ? 'Deleting...' : 'Delete'}
                             </button>
