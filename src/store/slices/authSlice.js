@@ -26,9 +26,16 @@ const loadCachedUser = () => {
   }
 };
 
+const cachedUser = loadCachedUser();
+
 const initialState = {
-  user: loadCachedUser(),
-  isAuthenticated: false,
+  user: cachedUser,
+  // Hydrated synchronously alongside `user` so ProtectedRoute's very first
+  // render (before App.jsx's checkAuth effect resolves) doesn't see a false
+  // logged-out state and bounce a hard page load (e.g. Cashfree's return_url
+  // after checkout) through /login back to home. checkAuth() below corrects
+  // this moments later if the cookie actually turns out to be invalid/expired.
+  isAuthenticated: Boolean(cachedUser),
   isLoading: false,
   error: null,
   isProfileUpdating: false,
