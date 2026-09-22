@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../../utils/api.js';
 import { fetchCatalogProducts, deleteProduct } from '../../store/slices/productSlice.js';
+import {
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from '../../store/slices/categorySlice.js';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
 import Select, { SelectOption } from '../../components/Select.jsx';
-import { categories as categoryOptions, subcategoriesByCategory } from '../../constants/taxonomy.js';
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -29,9 +33,100 @@ const loadCloudinaryWidget = () => {
   });
 };
 
+// One row of the Manage Categories panel — keeps its own editable-name and
+// new-subcategory draft state local rather than lifting it into ProductForm,
+// since neither draft means anything outside this specific category's row.
+const CategoryManagerRow = ({ category, onRename, onAddSubcategory, onRemoveSubcategory, onDelete, disabled }) => {
+  const [name, setName] = useState(category.name);
+  const [newSubcategory, setNewSubcategory] = useState('');
+  const nameDirty = name.trim() !== category.name && name.trim().length > 0;
+
+  return (
+    <div className="border border-white/10 p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={disabled}
+          className="flex-1 bg-transparent border border-white/15 px-3 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
+        />
+        {nameDirty && (
+          <button
+            type="button"
+            onClick={() => onRename(name.trim())}
+            disabled={disabled}
+            className="border border-brand text-brand px-3 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-brand hover:text-white disabled:opacity-60"
+          >
+            Save
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={disabled}
+          aria-label={`Delete ${category.name}`}
+          className="h-8 w-8 flex-none flex items-center justify-center border border-white/15 text-white/40 transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
+        >
+          ✕
+        </button>
+      </div>
+
+      {category.subcategories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {category.subcategories.map((sub) => (
+            <span
+              key={sub}
+              className="flex items-center gap-2 border border-white/15 px-3 py-1 text-xs text-white/70"
+            >
+              {sub}
+              <button
+                type="button"
+                onClick={() => onRemoveSubcategory(sub)}
+                disabled={disabled}
+                aria-label={`Remove ${sub}`}
+                className="text-white/40 transition-colors duration-200 hover:text-red-400 disabled:opacity-40"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={newSubcategory}
+          onChange={(e) => setNewSubcategory(e.target.value)}
+          disabled={disabled}
+          placeholder="New subcategory"
+          className="flex-1 bg-transparent border border-white/15 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            if (!newSubcategory.trim()) return;
+            onAddSubcategory(newSubcategory.trim());
+            setNewSubcategory('');
+          }}
+          disabled={disabled || !newSubcategory.trim()}
+          className="border border-white/15 text-white/60 px-3 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-40"
+        >
+          + Add
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ProductForm = () => {
   const dispatch = useDispatch();
   const { products } = useSelector((state) => state.products);
+  const { categories } = useSelector((state) => state.categories);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCategoryActionPending, setIsCategoryActionPending] = useState(false);
+  const [categoryActionError, setCategoryActionError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -69,6 +164,39 @@ const ProductForm = () => {
     setDeletingId(product._id);
     await dispatch(deleteProduct(product._id));
     setDeletingId(null);
+  };
+
+  const runCategoryAction = async (thunk) => {
+    setIsCategoryActionPending(true);
+    setCategoryActionError(null);
+    const result = await dispatch(thunk);
+    if (!result.success) setCategoryActionError(result.message);
+    setIsCategoryActionPending(false);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    runCategoryAction(createCategory({ name: newCategoryName.trim() })).then(() => setNewCategoryName(''));
+  };
+
+  const handleRenameCategory = (category, newName) => runCategoryAction(updateCategory(category._id, { name: newName }));
+
+  const handleAddSubcategory = (category, subcategory) =>
+    runCategoryAction(updateCategory(category._id, { subcategories: [...category.subcategories, subcategory] }));
+
+  const handleRemoveSubcategory = (category, subcategory) =>
+    runCategoryAction(
+      updateCategory(category._id, { subcategories: category.subcategories.filter((s) => s !== subcategory) })
+    );
+
+  const handleDeleteCategory = (category) => {
+    if (
+      !window.confirm(
+        `Delete category "${category.name}"? Products already published under it keep the name as plain text, but it'll disappear from this dropdown and the storefront nav.`
+      )
+    )
+      return;
+    runCategoryAction(deleteCategory(category._id));
   };
 
   const handleChange = (e) => {
@@ -290,9 +418,9 @@ const ProductForm = () => {
                     <SelectOption value="" disabled>
                       Select a category
                     </SelectOption>
-                    {categoryOptions.map((category) => (
-                      <SelectOption key={category} value={category}>
-                        {category}
+                    {categories.map((category) => (
+                      <SelectOption key={category._id} value={category.name}>
+                        {category.name}
                       </SelectOption>
                     ))}
                   </Select>
@@ -310,7 +438,7 @@ const ProductForm = () => {
                     <SelectOption value="" disabled>
                       {formData.category ? 'Select a subcategory' : 'Select a category first'}
                     </SelectOption>
-                    {(subcategoriesByCategory[formData.category] || []).map((subcategory) => (
+                    {(categories.find((c) => c.name === formData.category)?.subcategories || []).map((subcategory) => (
                       <SelectOption key={subcategory} value={subcategory}>
                         {subcategory}
                       </SelectOption>
@@ -369,6 +497,55 @@ const ProductForm = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Section — category & subcategory taxonomy management */}
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Manage Categories</h2>
+                  <p className="text-xs text-white/40 -mt-2">
+                    Add, rename, or remove categories and their subcategories — changes apply immediately to the
+                    Category dropdown above, the storefront's shop-by-category nav, and the Catalog filter. Renaming
+                    or deleting a category here does not change the category text already saved on existing products.
+                  </p>
+
+                  {categoryActionError && (
+                    <div className="border border-red-500/40 bg-red-950/40 text-red-300 text-xs px-3 py-3">
+                      {categoryActionError}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-4">
+                    {categories.map((category) => (
+                      <CategoryManagerRow
+                        key={category._id}
+                        category={category}
+                        disabled={isCategoryActionPending}
+                        onRename={(newName) => handleRenameCategory(category, newName)}
+                        onAddSubcategory={(sub) => handleAddSubcategory(category, sub)}
+                        onRemoveSubcategory={(sub) => handleRemoveSubcategory(category, sub)}
+                        onDelete={() => handleDeleteCategory(category)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      disabled={isCategoryActionPending}
+                      placeholder="New category name"
+                      className="flex-1 bg-transparent border border-white/15 px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      disabled={isCategoryActionPending || !newCategoryName.trim()}
+                      className="border border-white/15 text-white/60 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-40"
+                    >
+                      + Add Category
+                    </button>
                   </div>
                 </div>
 

@@ -5,13 +5,13 @@ import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import Select, { SelectOption } from '../../components/Select.jsx';
-import { categories } from '../../constants/taxonomy.js';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
 const Catalog = () => {
   const dispatch = useDispatch();
   const { products, isLoading, error } = useSelector((state) => state.products);
+  const { categories } = useSelector((state) => state.categories);
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
@@ -54,16 +54,16 @@ const Catalog = () => {
             <h2 className="font-serif text-lg text-brand mb-2">Categories</h2>
             <div className="flex flex-col gap-4">
               {categories.map((category) => (
-                <label key={category} className="flex items-center gap-4 text-sm text-white/70">
+                <label key={category._id} className="flex items-center gap-4 text-sm text-white/70">
                   <input
                     type="checkbox"
-                    checked={selectedCategory === category}
+                    checked={selectedCategory === category.name}
                     onChange={() =>
-                      setSelectedCategory((prev) => (prev === category ? '' : category))
+                      setSelectedCategory((prev) => (prev === category.name ? '' : category.name))
                     }
                     className="h-4 w-4 accent-brand"
                   />
-                  {category}
+                  {category.name}
                 </label>
               ))}
             </div>

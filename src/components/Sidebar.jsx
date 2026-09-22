@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { categories } from '../constants/taxonomy.js';
+import { useSelector } from 'react-redux';
 
 // The primary nav drawer on every screen size (not just mobile) — opened from
 // the hamburger button at the navbar's top-left. Links straight into a
@@ -7,6 +7,7 @@ import { categories } from '../constants/taxonomy.js';
 // doesn't fit in the always-visible top bar (Sign In/Bag stay in the navbar
 // itself; this is for everything else, like Admin Dashboard).
 const Sidebar = ({ isOpen, onClose, isAdmin }) => {
+  const categories = useSelector((state) => state.categories.categories);
   if (!isOpen) return null;
 
   return (
@@ -49,12 +50,12 @@ const Sidebar = ({ isOpen, onClose, isAdmin }) => {
         <span className="mt-4 px-2 text-xs uppercase tracking-widest text-white/30">Shop By Category</span>
         {categories.map((category) => (
           <Link
-            key={category}
-            to={`/catalog?category=${encodeURIComponent(category)}`}
+            key={category._id}
+            to={`/catalog?category=${encodeURIComponent(category.name)}`}
             onClick={onClose}
             className="px-2 py-3 text-sm uppercase tracking-widest text-white/60 transition-colors duration-300 hover:text-brand"
           >
-            {category}
+            {category.name}
           </Link>
         ))}
 

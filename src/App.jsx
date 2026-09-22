@@ -17,6 +17,7 @@ import Dashboard from './pages/admin/Dashboard.jsx';
 import ProductForm from './pages/admin/ProductForm.jsx';
 import OrderControl from './pages/admin/OrderControl.jsx';
 import { loginSuccess, checkAuth } from './store/slices/authSlice.js';
+import { fetchCategories } from './store/slices/categorySlice.js';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -41,6 +42,10 @@ function App() {
       dispatch(loginSuccess(cachedUser));
     }
     dispatch(checkAuth());
+    // Fetched once here rather than per-page — Sidebar (shop-by-category
+    // links), Catalog (filter), and the admin Publishing Terminal all read
+    // from the same store slice instead of each re-fetching independently.
+    dispatch(fetchCategories());
   }, []);
 
   return (
