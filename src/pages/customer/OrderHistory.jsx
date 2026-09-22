@@ -276,7 +276,7 @@ const OrdersPanel = () => {
                 <div className="flex flex-wrap gap-8">
                   <div className="flex flex-col gap-2">
                     <span className="text-xs uppercase tracking-widest text-white/40">Order ID</span>
-                    <span className="text-sm text-brand font-semibold">{order.cashfreeOrderId}</span>
+                    <span className="text-sm text-brand font-semibold">{order.razorpayOrderId}</span>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className="text-xs uppercase tracking-widest text-white/40">Date</span>

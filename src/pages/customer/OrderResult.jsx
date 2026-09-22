@@ -30,7 +30,7 @@ const OrderResult = () => {
   }, [dispatch]);
 
   const matchedOrder = useMemo(
-    () => myOrders.find((order) => order.cashfreeOrderId === orderId),
+    () => myOrders.find((order) => order.razorpayOrderId === orderId),
     [myOrders, orderId]
   );
 

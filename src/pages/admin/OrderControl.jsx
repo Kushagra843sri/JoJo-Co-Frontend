@@ -156,7 +156,7 @@ const OrderControl = () => {
                             className="border-b border-white/10 cursor-pointer hover:bg-white/[0.03] transition-colors duration-150"
                           >
                             <td className="py-4 pr-6 font-mono text-right text-white/80">
-                              {order.cashfreeOrderId}
+                              {order.razorpayOrderId}
                             </td>
                             <td className="py-4 pr-6 text-white/80">{order.user?.name || 'Unknown'}</td>
                             <td className="py-4 pr-6 text-white/50">

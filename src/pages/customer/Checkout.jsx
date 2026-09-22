@@ -7,19 +7,19 @@ const inputClasses =
   'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300';
 const labelClasses = 'text-xs uppercase tracking-widest text-white/40';
 
-// Dynamically injects the official Cashfree Web Checkout SDK the first time it's
+// Dynamically injects the official Razorpay Checkout SDK the first time it's
 // needed, rather than requiring a permanent <script> tag in index.html.
-const loadCashfreeSdk = () => {
+const loadRazorpaySdk = () => {
   return new Promise((resolve, reject) => {
-    if (window.Cashfree) {
-      resolve(window.Cashfree);
+    if (window.Razorpay) {
+      resolve(window.Razorpay);
       return;
     }
 
     const script = document.createElement('script');
-    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-    script.onload = () => resolve(window.Cashfree);
-    script.onerror = () => reject(new Error('Failed to load Cashfree checkout SDK'));
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(window.Razorpay);
+    script.onerror = () => reject(new Error('Failed to load Razorpay checkout SDK'));
     document.body.appendChild(script);
   });
 };
@@ -86,21 +86,46 @@ const Checkout = () => {
       };
 
       const { data } = await api.post('/payments/checkout', payload);
-      const { payment_session_id } = data;
+      const { razorpayOrderId, amount, currency, keyId, customer } = data;
 
-      if (payment_session_id) {
-        const Cashfree = await loadCashfreeSdk();
-        const cashfree = Cashfree({ mode: import.meta.env.VITE_CASHFREE_MODE || 'sandbox' });
-        cashfree.checkout({
-          paymentSessionId: payment_session_id,
-          redirectTarget: '_self',
+      if (razorpayOrderId) {
+        const Razorpay = await loadRazorpaySdk();
+        const rzp = new Razorpay({
+          key: keyId,
+          amount,
+          currency,
+          order_id: razorpayOrderId,
+          name: 'JOJO & CO',
+          description: 'Order Payment',
+          prefill: {
+            name: customer?.name,
+            email: customer?.email,
+            contact: customer?.phone,
+          },
+          theme: { color: '#a855f7' },
+          // The Checkout widget's own success callback — actual order
+          // confirmation still waits on the server-verified webhook, this
+          // just moves the shopper on to the status page.
+          handler: () => {
+            window.location.href = `/order-result?order_id=${razorpayOrderId}`;
+          },
+          modal: {
+            ondismiss: () => {
+              setSubmitError('Payment was cancelled.');
+              setIsSubmitting(false);
+            },
+          },
         });
+        rzp.on('payment.failed', () => {
+          window.location.href = `/order-result?order_id=${razorpayOrderId}`;
+        });
+        rzp.open();
       } else {
         setSubmitError('Payment session could not be initialized');
+        setIsSubmitting(false);
       }
     } catch (err) {
       setSubmitError(err.response?.data?.message || 'Failed to initialize checkout');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -230,7 +255,7 @@ const Checkout = () => {
           <div className="flex flex-col gap-4 border border-white/10 p-6">
             <h2 className="font-serif text-lg text-brand">Payment Method</h2>
             <div className="flex items-center justify-between border border-white/15 px-4 py-4">
-              <span className="text-sm text-white/60">Cashfree Payment Gateway</span>
+              <span className="text-sm text-white/60">Razorpay Payment Gateway</span>
               <span className="text-xs uppercase tracking-widest border border-brand text-brand px-4 py-2">
                 Secured
               </span>
@@ -288,7 +313,7 @@ const Checkout = () => {
               disabled={isSubmitting || items.length === 0}
               className="w-full btn-glow text-white py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
             >
-              {isSubmitting ? 'Processing...' : 'Place Order & Pay via Cashfree'}
+              {isSubmitting ? 'Processing...' : 'Place Order & Pay via Razorpay'}
             </button>
           </div>
         </div>

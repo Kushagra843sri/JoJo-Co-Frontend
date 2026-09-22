@@ -96,7 +96,7 @@ const Dashboard = () => {
                   <tbody>
                     {recentActivity.map((order) => (
                       <tr key={order._id} className="border-b border-white/10">
-                        <td className="py-4 pr-6 font-mono text-white/80">{order.cashfreeOrderId}</td>
+                        <td className="py-4 pr-6 font-mono text-white/80">{order.razorpayOrderId}</td>
                         <td className="py-4 pr-6 text-white/80">{order.user?.name || 'Unknown'}</td>
                         <td className="py-4 pr-6 text-white/50">
                           {new Date(order.createdAt).toLocaleDateString()}

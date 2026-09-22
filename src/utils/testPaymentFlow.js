@@ -3,8 +3,8 @@
 // This file lives under frontend/src/utils/ per this step's instructions, but it
 // is never imported by App.jsx, any page, or any component, and must never be.
 // It imports Node-only modules (mongoose) and reads BACKEND secrets
-// (MONGODB_URI, CASHFREE_SECRET_KEY) directly from backend/.env — none of that
-// may ever ship inside a Vite-bundled browser file. Run it directly with Node:
+// (MONGODB_URI, RAZORPAY_WEBHOOK_SECRET) directly from backend/.env — none of
+// that may ever ship inside a Vite-bundled browser file. Run it directly with Node:
 //
 //   node frontend/src/utils/testPaymentFlow.js
 //
@@ -35,12 +35,13 @@ const BACKEND_URL = 'http://localhost:5000/api/v1';
 // backend's own .env rather than duplicating secrets into the frontend tree.
 dotenv.config({ path: path.join(BACKEND_ROOT, '.env') });
 
-// A minimal stand-in for the browser globals Checkout.jsx's loadCashfreeSdk()
+// A minimal stand-in for the browser globals Checkout.jsx's loadRazorpaySdk()
 // touches, so Step 1 can prove the FRONTEND's own reaction logic is correct —
-// without a real browser and without real Cashfree.
+// without a real browser and without a real Razorpay checkout widget.
 function installFakeBrowserGlobals() {
   let injectedScriptSrc = null;
-  let checkoutCallArgs = null;
+  let constructedOptions = null;
+  let openCalled = false;
 
   globalThis.document = {
     createElement: () => {
@@ -49,13 +50,17 @@ function installFakeBrowserGlobals() {
         set(value) {
           injectedScriptSrc = value;
           // Simulate the SDK finishing its (real, network) load and exposing
-          // window.Cashfree, exactly like the real <script onload> would.
+          // window.Razorpay, exactly like the real <script onload> would.
           setTimeout(() => {
-            globalThis.window.Cashfree = (config) => ({
-              checkout: (args) => {
-                checkoutCallArgs = { config, args };
-              },
-            });
+            globalThis.window.Razorpay = function (options) {
+              constructedOptions = options;
+              return {
+                open: () => {
+                  openCalled = true;
+                },
+                on: () => {},
+              };
+            };
             script.onload?.();
           }, 0);
         },
@@ -71,23 +76,24 @@ function installFakeBrowserGlobals() {
 
   return {
     getInjectedScriptSrc: () => injectedScriptSrc,
-    getCheckoutCallArgs: () => checkoutCallArgs,
+    getConstructedOptions: () => constructedOptions,
+    wasOpenCalled: () => openCalled,
   };
 }
 
-// The exact same loadCashfreeSdk implementation as Checkout.jsx. Duplicated
+// The exact same loadRazorpaySdk implementation as Checkout.jsx. Duplicated
 // here on purpose — this harness must not import a .jsx file, and this step
 // must not alter Checkout.jsx to export internals it doesn't otherwise need to.
-function loadCashfreeSdk() {
+function loadRazorpaySdk() {
   return new Promise((resolve, reject) => {
-    if (window.Cashfree) {
-      resolve(window.Cashfree);
+    if (window.Razorpay) {
+      resolve(window.Razorpay);
       return;
     }
     const script = document.createElement('script');
-    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-    script.onload = () => resolve(window.Cashfree);
-    script.onerror = () => reject(new Error('Failed to load Cashfree checkout SDK'));
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(window.Razorpay);
+    script.onerror = () => reject(new Error('Failed to load Razorpay checkout SDK'));
     document.body.appendChild(script);
   });
 }
@@ -109,11 +115,11 @@ async function step1MockCheckoutSuccess({ User, Product, Order }) {
   });
 
   const testOrderId = `order_harness_${Date.now()}`;
-  const mockPaymentSessionId = `session_harness_${Date.now()}`;
+  const mockAmountInPaise = 420000;
 
   // Mirrors exactly what initializePayment does up to (but not including) the
-  // real external Cashfree fetch() call — the one part of the real pipeline
-  // that genuinely cannot run without real Cashfree credentials.
+  // real external Razorpay fetch() call — the one part of the real pipeline
+  // that genuinely cannot run without real Razorpay credentials.
   const order = await Order.create({
     user: user._id,
     items: [
@@ -132,39 +138,39 @@ async function step1MockCheckoutSuccess({ User, Product, Order }) {
       zip: '400001',
     },
     financialSummary: { subtotal: 4000, shipping: 0, tax: 200, totalAmount: 4200 },
-    cashfreeOrderId: testOrderId,
+    razorpayOrderId: testOrderId,
     paymentStatus: 'pending',
   });
 
   console.log('Mock "checkout succeeded" response fabricated:', {
-    payment_session_id: mockPaymentSessionId,
-    orderId: testOrderId,
+    razorpayOrderId: testOrderId,
+    amount: mockAmountInPaise,
   });
   console.log('Real pending Order document created in MongoDB:', order._id.toString());
 
   // Now prove the FRONTEND side reacts correctly to that mock response — this
   // is the exact branch handleSubmit takes in Checkout.jsx on success.
   const fakeGlobals = installFakeBrowserGlobals();
-  const paymentSessionId = mockPaymentSessionId;
 
-  if (paymentSessionId) {
-    const Cashfree = await loadCashfreeSdk();
-    const cashfree = Cashfree({ mode: 'sandbox' });
-    cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
-  }
+  const Razorpay = await loadRazorpaySdk();
+  const rzp = new Razorpay({
+    key: 'rzp_test_harness_key',
+    amount: mockAmountInPaise,
+    currency: 'INR',
+    order_id: testOrderId,
+    name: 'JOJO & CO',
+  });
+  rzp.open();
 
   // The SDK-loading path is asynchronous (script onload); give it a tick.
   await new Promise((resolve) => setTimeout(resolve, 10));
 
   const scriptSrc = fakeGlobals.getInjectedScriptSrc();
-  const checkoutArgs = fakeGlobals.getCheckoutCallArgs();
+  const constructedOptions = fakeGlobals.getConstructedOptions();
   console.log('SDK script injection targeted:', scriptSrc);
-  console.log('cashfree.checkout() called with:', JSON.stringify(checkoutArgs));
-  console.log(
-    '  -> paymentSessionId matches mock session:',
-    checkoutArgs?.args?.paymentSessionId === mockPaymentSessionId
-  );
-  console.log('  -> redirectTarget correct:', checkoutArgs?.args?.redirectTarget === '_self');
+  console.log('new Razorpay() constructed with:', JSON.stringify(constructedOptions));
+  console.log('  -> order_id matches mock order:', constructedOptions?.order_id === testOrderId);
+  console.log('  -> rzp.open() was called:', fakeGlobals.wasOpenCalled());
 
   return { user, product, order, testOrderId };
 }
@@ -173,26 +179,34 @@ async function step2MockWebhookClearance(testOrderId) {
   console.log('\n--- STEP 2: Mock Webhook Clearance ---');
 
   const payload = {
-    type: 'PAYMENT_SUCCESS_WEBHOOK',
-    data: {
-      order: { order_id: testOrderId },
-      payment: { payment_status: 'SUCCESS', payment_amount: 4200, payment_currency: 'INR' },
+    event: 'payment.captured',
+    payload: {
+      payment: {
+        entity: {
+          id: `pay_harness_${Date.now()}`,
+          order_id: testOrderId,
+          status: 'captured',
+          amount: 420000,
+          currency: 'INR',
+        },
+      },
     },
   };
   const rawBody = JSON.stringify(payload);
-  const timestamp = Math.floor(Date.now() / 1000).toString();
 
+  // Razorpay signs the raw webhook body with the Webhook Secret (a separate
+  // credential from the API key/secret) — a plain hex HMAC, no timestamp
+  // prefix, unlike Cashfree's older scheme this harness used to mimic.
   const signature = crypto
-    .createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
-    .update(timestamp + rawBody)
-    .digest('base64');
+    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
 
   const res = await fetch(`${BACKEND_URL}/payments/webhook`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-webhook-signature': signature,
-      'x-webhook-timestamp': timestamp,
+      'x-razorpay-signature': signature,
     },
     body: rawBody,
   });
@@ -208,11 +222,12 @@ async function step3VerifyDatabase(Order, orderDocId, testOrderId) {
   const order = await Order.findById(orderDocId);
   console.log('paymentStatus:', order.paymentStatus);
   console.log('  -> transitioned pending -> paid:', order.paymentStatus === 'paid');
+  console.log('razorpayPaymentId recorded:', order.razorpayPaymentId);
   console.log('webhookLogs count:', order.webhookLogs.length);
-  console.log('  -> event recorded:', order.webhookLogs[0]?.event === 'PAYMENT_SUCCESS_WEBHOOK');
+  console.log('  -> event recorded:', order.webhookLogs[0]?.event === 'payment.captured');
   console.log(
     '  -> payload preserved with correct order_id:',
-    order.webhookLogs[0]?.payload?.data?.order?.order_id === testOrderId
+    order.webhookLogs[0]?.payload?.payload?.payment?.entity?.order_id === testOrderId
   );
 
   return order;
