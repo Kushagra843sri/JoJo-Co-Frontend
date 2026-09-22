@@ -1,10 +1,5 @@
 import { Link } from 'react-router-dom';
-
-// Must stay byte-for-byte in sync with the `categories`/`categoryOptions`
-// lists in Catalog.jsx and admin/ProductForm.jsx — Catalog's filter does an
-// exact match against whatever's saved on a product, so a category link here
-// that doesn't match a real value would silently show zero products.
-const categories = ['Outerwear', 'Knitwear', 'Denim', 'Shirting', 'Accessories'];
+import { categories } from '../constants/taxonomy.js';
 
 // The primary nav drawer on every screen size (not just mobile) — opened from
 // the hamburger button at the navbar's top-left. Links straight into a

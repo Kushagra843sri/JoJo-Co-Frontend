@@ -4,11 +4,7 @@ import api from '../../utils/api.js';
 import { fetchCatalogProducts, deleteProduct } from '../../store/slices/productSlice.js';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
 import Select, { SelectOption } from '../../components/Select.jsx';
-
-// Must stay byte-for-byte in sync with the `categories` list in Catalog.jsx —
-// the storefront filter does an exact case-insensitive match against whatever
-// gets saved here.
-const categoryOptions = ['Outerwear', 'Knitwear', 'Denim', 'Shirting', 'Accessories'];
+import { categories as categoryOptions, subcategoriesByCategory } from '../../constants/taxonomy.js';
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -77,7 +73,15 @@ const ProductForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      // A subcategory from the old category almost never belongs to the
+      // newly-picked one's list (see subcategoriesByCategory), so carrying
+      // it forward would silently save a mismatched category/subcategory pair.
+      if (name === 'category') {
+        return { ...prev, category: value, subcategory: '' };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleOpenUploadWidget = async () => {
@@ -300,15 +304,17 @@ const ProductForm = () => {
                     name="subcategory"
                     value={formData.subcategory}
                     onChange={handleChange}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !formData.category}
                     className={`${inputClasses} bg-ink`}
                   >
                     <SelectOption value="" disabled>
-                      Select a subcategory
+                      {formData.category ? 'Select a subcategory' : 'Select a category first'}
                     </SelectOption>
-                    <SelectOption value="crewnecks">Crewnecks</SelectOption>
-                    <SelectOption value="cardigans">Cardigans</SelectOption>
-                    <SelectOption value="jackets">Jackets</SelectOption>
+                    {(subcategoriesByCategory[formData.category] || []).map((subcategory) => (
+                      <SelectOption key={subcategory} value={subcategory}>
+                        {subcategory}
+                      </SelectOption>
+                    ))}
                   </Select>
                 </div>
 
@@ -348,8 +354,17 @@ const ProductForm = () => {
                     {uploadedImages.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {uploadedImages.map((url) => (
-                          <div key={url} className="aspect-square overflow-hidden bg-white/5">
+                          <div key={url} className="relative aspect-square overflow-hidden bg-white/5">
                             <img src={url} alt="Uploaded lookbook asset" className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setUploadedImages((prev) => prev.filter((u) => u !== url))}
+                              disabled={isSubmitting}
+                              aria-label="Remove image"
+                              className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center bg-ink/80 border border-white/20 text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
+                            >
+                              ✕
+                            </button>
                           </div>
                         ))}
                       </div>

@@ -5,8 +5,8 @@ import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import Select, { SelectOption } from '../../components/Select.jsx';
+import { categories } from '../../constants/taxonomy.js';
 
-const categories = ['Outerwear', 'Knitwear', 'Denim', 'Shirting', 'Accessories'];
 const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
 const Catalog = () => {
