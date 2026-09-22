@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/ordersSlice.js';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
+import Select, { SelectOption } from '../../components/Select.jsx';
 
 const fulfillmentOptions = [
   { value: 'processing', label: 'Processing' },
@@ -175,7 +176,7 @@ const OrderControl = () => {
                               </span>
                             </td>
                             <td className="py-4 pr-6" onClick={(e) => e.stopPropagation()}>
-                              <select
+                              <Select
                                 value={order.fulfillmentStatus}
                                 onChange={(e) => handleStatusChange(order._id, e.target.value)}
                                 className={`bg-ink border px-4 py-2 text-xs uppercase tracking-widest focus:outline-none focus:border-brand transition-colors duration-300 ${
@@ -183,11 +184,11 @@ const OrderControl = () => {
                                 }`}
                               >
                                 {fulfillmentOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
+                                  <SelectOption key={option.value} value={option.value}>
                                     {option.label}
-                                  </option>
+                                  </SelectOption>
                                 ))}
-                              </select>
+                              </Select>
                             </td>
                             {view === 'active' && (
                               <td className="py-4 text-center" onClick={(e) => e.stopPropagation()}>

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import api from '../../utils/api.js';
 import { fetchCatalogProducts, deleteProduct } from '../../store/slices/productSlice.js';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
+import Select, { SelectOption } from '../../components/Select.jsx';
 
 // Must stay byte-for-byte in sync with the `categories` list in Catalog.jsx —
 // the storefront filter does an exact case-insensitive match against whatever
@@ -275,40 +276,40 @@ const ProductForm = () => {
 
                 <div className="flex flex-col gap-2">
                   <label className={labelClasses}>Category</label>
-                  <select
+                  <Select
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
                     disabled={isSubmitting}
                     className={`${inputClasses} bg-ink`}
                   >
-                    <option value="" disabled>
+                    <SelectOption value="" disabled>
                       Select a category
-                    </option>
+                    </SelectOption>
                     {categoryOptions.map((category) => (
-                      <option key={category} value={category}>
+                      <SelectOption key={category} value={category}>
                         {category}
-                      </option>
+                      </SelectOption>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className={labelClasses}>Subcategory</label>
-                  <select
+                  <Select
                     name="subcategory"
                     value={formData.subcategory}
                     onChange={handleChange}
                     disabled={isSubmitting}
                     className={`${inputClasses} bg-ink`}
                   >
-                    <option value="" disabled>
+                    <SelectOption value="" disabled>
                       Select a subcategory
-                    </option>
-                    <option value="crewnecks">Crewnecks</option>
-                    <option value="cardigans">Cardigans</option>
-                    <option value="jackets">Jackets</option>
-                  </select>
+                    </SelectOption>
+                    <SelectOption value="crewnecks">Crewnecks</SelectOption>
+                    <SelectOption value="cardigans">Cardigans</SelectOption>
+                    <SelectOption value="jackets">Jackets</SelectOption>
+                  </Select>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -423,35 +424,35 @@ const ProductForm = () => {
                         {variants.map((row) => (
                           <tr key={row.id} className="border-b border-white/10">
                             <td className="py-4 pr-6">
-                              <select
+                              <Select
                                 value={row.shadeId || ''}
                                 onChange={(e) => handleVariantChange(row.id, 'shadeId', e.target.value)}
                                 disabled={isSubmitting}
                                 className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               >
-                                <option value="" disabled>
+                                <SelectOption value="" disabled>
                                   Select a shade
-                                </option>
+                                </SelectOption>
                                 {shades.map((shade) => (
-                                  <option key={shade.id} value={shade.id}>
+                                  <SelectOption key={shade.id} value={shade.id}>
                                     {shade.name || 'Untitled shade'}
-                                  </option>
+                                  </SelectOption>
                                 ))}
-                              </select>
+                              </Select>
                             </td>
                             <td className="py-4 pr-6">
-                              <select
+                              <Select
                                 value={row.size}
                                 onChange={(e) => handleVariantChange(row.id, 'size', e.target.value)}
                                 disabled={isSubmitting}
                                 className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               >
                                 {sizeOptions.map((size) => (
-                                  <option key={size} value={size}>
+                                  <SelectOption key={size} value={size}>
                                     {size}
-                                  </option>
+                                  </SelectOption>
                                 ))}
-                              </select>
+                              </Select>
                             </td>
                             <td className="py-4 pr-6">
                               <input

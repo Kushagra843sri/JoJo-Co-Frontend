@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
+import Select, { SelectOption } from '../../components/Select.jsx';
 
 const categories = ['Outerwear', 'Knitwear', 'Denim', 'Shirting', 'Accessories'];
 const sizes = ['XS', 'S', 'M', 'L', 'XL'];
@@ -100,14 +101,14 @@ const Catalog = () => {
               placeholder="Search the collection"
               className="w-full sm:w-64 px-4 py-2 text-sm bg-transparent text-white border border-white/15 placeholder:text-white/30 focus:outline-none focus:border-brand"
             />
-            <select
+            <Select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
               className="px-4 py-2 text-sm bg-ink text-white/70 border border-white/15 focus:outline-none focus:border-brand"
             >
-              <option value="asc">Price: Low to High</option>
-              <option value="desc">Price: High to Low</option>
-            </select>
+              <SelectOption value="asc">Price: Low to High</SelectOption>
+              <SelectOption value="desc">Price: High to Low</SelectOption>
+            </Select>
           </div>
 
           {/* Fallback states */}
