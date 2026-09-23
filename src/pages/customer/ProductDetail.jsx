@@ -6,6 +6,7 @@ import { addItem } from '../../store/slices/cartSlice.js';
 import { fetchWishlist, addToWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
+import { getVideoDeliveryUrl } from '../../utils/cloudinaryVideo.js';
 
 const dummyReviews = [
   { id: 1, author: 'Ananya R.', rating: 5, text: 'Premium heavy-weight fabric, beautiful drape. 5/5 stars.' },
@@ -192,6 +193,23 @@ const ProductDetail = () => {
                 </button>
               ))}
             </div>
+            {currentProduct.lookbookVideo?.url && (
+              <div className="relative aspect-[4/5] overflow-hidden bg-white/5">
+                {/* muted + playsInline are what let iOS Safari autoplay it;
+                    preload="metadata" keeps the clip off the critical path. */}
+                <video
+                  src={getVideoDeliveryUrl(currentProduct.lookbookVideo.url)}
+                  poster={currentProduct.lookbookVideo.posterUrl}
+                  aria-label={`${currentProduct.title} — lookbook video`}
+                  muted
+                  loop
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
           </div>
 
           {/* Right column — product details */}

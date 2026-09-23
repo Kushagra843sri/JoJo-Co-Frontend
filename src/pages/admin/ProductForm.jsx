@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../../utils/api.js';
+import { getVideoDeliveryUrl, getVideoPosterUrl } from '../../utils/cloudinaryVideo.js';
 import { fetchCatalogProducts, deleteProduct } from '../../store/slices/productSlice.js';
 import {
   createCategory,
@@ -16,6 +17,9 @@ const labelClasses = 'text-xs uppercase tracking-widest text-white/40';
 const inputClasses =
   'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60';
 const textareaClasses = inputClasses;
+
+const MAX_VIDEO_SECONDS = 15;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 // Lazily injects Cloudinary's real upload widget script, caching window.cloudinary
 // so repeated calls (mount preload + the button click) never re-inject it.
@@ -138,6 +142,8 @@ const ProductForm = () => {
     tags: '',
   });
   const [uploadedImages, setUploadedImages] = useState([]);
+  // Optional short clip, stored separately from the photos (see Product.js).
+  const [lookbookVideo, setLookbookVideo] = useState(null);
   // Shades share the same uploaded photo(s) above — the product page tints that
   // shared photo live with each shade's hex instead of requiring a distinct
   // photo per color. Naming an uploaded image group after a shade name later
@@ -241,6 +247,47 @@ const ProductForm = () => {
       .open();
   };
 
+  const handleOpenVideoUploadWidget = async () => {
+    setError(null);
+    const cloudinary = await loadCloudinaryWidget();
+    cloudinary
+      .createUploadWidget(
+        {
+          cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
+          resourceType: 'video',
+          multiple: false,
+          clientAllowedFormats: ['mp4', 'mov', 'webm'],
+          maxFileSize: MAX_VIDEO_BYTES,
+        },
+        (uploadError, result) => {
+          // Same body scroll-lock cleanup as the image widget above.
+          if (uploadError || result?.event === 'close') {
+            document.body.style.overflow = '';
+          }
+          if (uploadError) {
+            setError(uploadError.statusText || uploadError.message || 'Video upload failed');
+            return;
+          }
+          if (result?.event === 'success') {
+            // The widget can't cap clip length before upload, so enforce it
+            // here — a too-long clip is simply not attached to the product.
+            if (result.info.duration > MAX_VIDEO_SECONDS) {
+              setError(
+                `That clip is ${Math.round(result.info.duration)}s — lookbook videos must be ${MAX_VIDEO_SECONDS}s or shorter.`
+              );
+              return;
+            }
+            setLookbookVideo({
+              url: result.info.secure_url,
+              posterUrl: getVideoPosterUrl(result.info.secure_url),
+            });
+          }
+        }
+      )
+      .open();
+  };
+
   const handleShadeChange = (id, field, value) => {
     setShades((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   };
@@ -308,6 +355,7 @@ const ProductForm = () => {
           .map((t) => t.trim())
           .filter(Boolean),
         images: uploadedImages.length > 0 ? [{ color: 'Base', urls: uploadedImages }] : [],
+        lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => {
           const shade = shadeById.get(v.shadeId);
           return {
@@ -498,6 +546,46 @@ const ProductForm = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Section A2 — optional short lookbook video */}
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Lookbook Video</h2>
+                  <p className="text-xs text-white/40 -mt-2">
+                    Optional — a short clip (up to {MAX_VIDEO_SECONDS}s, mp4/mov/webm) shown muted and looping on the
+                    product page below the photos. Photos are still used everywhere else.
+                  </p>
+                  {lookbookVideo ? (
+                    <div className="relative aspect-[4/5] w-40 overflow-hidden bg-white/5">
+                      <video
+                        src={getVideoDeliveryUrl(lookbookVideo.url)}
+                        poster={lookbookVideo.posterUrl}
+                        muted
+                        loop
+                        autoPlay
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLookbookVideo(null)}
+                        disabled={isSubmitting}
+                        aria-label="Remove video"
+                        className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center bg-ink/80 border border-white/20 text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleOpenVideoUploadWidget}
+                      disabled={isSubmitting}
+                      className="border border-brand text-brand px-4 py-4 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-brand hover:text-white disabled:opacity-60"
+                    >
+                      Upload Lookbook Video
+                    </button>
+                  )}
                 </div>
 
                 {/* Section — category & subcategory taxonomy management */}
