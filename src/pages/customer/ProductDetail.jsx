@@ -6,6 +6,7 @@ import { addItem } from '../../store/slices/cartSlice.js';
 import { fetchWishlist, addToWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
+import ImageLightbox from '../../components/ImageLightbox.jsx';
 import { getVideoDeliveryUrl } from '../../utils/cloudinaryVideo.js';
 
 const dummyReviews = [
@@ -74,6 +75,7 @@ const ProductDetail = () => {
   // always starts on that product's first photo.
   const [imagePick, setImagePick] = useState({ productId: null, index: 0 });
   const touchStartX = useRef(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
 
@@ -230,6 +232,14 @@ const ProductDetail = () => {
               onTouchEnd={handleTouchEnd}
             >
               <CrossfadeImage src={mainImage} alt={`${currentProduct.title} — photo ${activeImageIndex + 1}`} />
+              {mainImage && (
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(true)}
+                  aria-label="View photo full screen"
+                  className="absolute inset-0 z-0 cursor-zoom-in"
+                />
+              )}
               {galleryImages.length > 1 && (
                 <>
                   <button
@@ -252,7 +262,7 @@ const ProductDetail = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <span className="absolute bottom-3 right-3 z-10 rounded-full bg-black/60 px-3 py-1 text-[10px] uppercase tracking-widest text-white/70 backdrop-blur">
+                  <span className="pointer-events-none absolute bottom-3 right-3 z-10 rounded-full bg-black/60 px-3 py-1 text-[10px] uppercase tracking-widest text-white/70 backdrop-blur">
                     {activeImageIndex + 1} / {galleryImages.length}
                   </span>
                 </>
@@ -430,6 +440,16 @@ const ProductDetail = () => {
         </div>
       )}
       </div>
+
+      {isLightboxOpen && galleryImages.length > 0 && (
+        <ImageLightbox
+          images={galleryImages}
+          index={activeImageIndex}
+          title={currentProduct.title}
+          onIndexChange={showImage}
+          onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
 
       <Footer />
     </div>
