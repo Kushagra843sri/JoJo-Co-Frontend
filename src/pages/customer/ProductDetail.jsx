@@ -236,7 +236,7 @@ const ProductDetail = () => {
                     type="button"
                     onClick={() => showImage(activeImageIndex - 1)}
                     aria-label="Previous photo"
-                    className="absolute left-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand"
+                    className="absolute left-3 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand active:scale-95"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-7 7 7 7" />
@@ -246,7 +246,7 @@ const ProductDetail = () => {
                     type="button"
                     onClick={() => showImage(activeImageIndex + 1)}
                     aria-label="Next photo"
-                    className="absolute right-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand"
+                    className="absolute right-3 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand active:scale-95"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -259,7 +259,7 @@ const ProductDetail = () => {
               )}
             </div>
             {galleryImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="hidden md:grid grid-cols-4 gap-4">
                 {galleryImages.map((image, index) => (
                   <button
                     key={image}
