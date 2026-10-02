@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById } from '../../store/slices/productSlice.js';
@@ -12,6 +12,50 @@ const dummyReviews = [
   { id: 1, author: 'Ananya R.', rating: 5, text: 'Premium heavy-weight fabric, beautiful drape. 5/5 stars.' },
   { id: 2, author: 'Rohan K.', rating: 4, text: 'True to size and holds shape after washing. 4/5 stars.' },
 ];
+
+// Image-to-image transition: when `src` changes (a different shade's photo, or
+// another thumbnail) the new photo is stacked on top and fades in only once it
+// has actually loaded, while the previous one stays fully visible underneath —
+// so the shopper never sees a blank frame or a hard cut. Superseded layers are
+// dropped shortly after the new one is fully opaque.
+const CrossfadeImage = ({ src, alt }) => {
+  const [layers, setLayers] = useState([]);
+  const nextKey = useRef(0);
+
+  useEffect(() => {
+    if (!src) return;
+    setLayers((prev) => {
+      if (prev.length > 0 && prev[prev.length - 1].src === src) return prev;
+      return [...prev, { key: nextKey.current++, src, loaded: false }];
+    });
+  }, [src]);
+
+  useEffect(() => {
+    const top = layers[layers.length - 1];
+    if (layers.length < 2 || !top?.loaded) return undefined;
+    const timer = setTimeout(() => setLayers((prev) => prev.slice(-1)), 700);
+    return () => clearTimeout(timer);
+  }, [layers]);
+
+  const markLoaded = (key) =>
+    setLayers((prev) => (prev.some((l) => l.key === key && !l.loaded) ? prev.map((l) => (l.key === key ? { ...l, loaded: true } : l)) : prev));
+
+  return layers.map((layer, index) => (
+    <img
+      key={layer.key}
+      ref={(el) => {
+        // Cached images can finish loading before React attaches onLoad.
+        if (el && el.complete && el.naturalWidth > 0) markLoaded(layer.key);
+      }}
+      src={layer.src}
+      alt={index === layers.length - 1 ? alt : ''}
+      onLoad={() => markLoaded(layer.key)}
+      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ease-in-out ${
+        layer.loaded ? 'opacity-100' : 'opacity-0'
+      }`}
+    />
+  ));
+};
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -27,6 +71,9 @@ const ProductDetail = () => {
   // dependent-effect chain settling a render behind the data it's deriving from.
   const [selectedColorOverride, setSelectedColorOverride] = useState(null);
   const [selectedSizeOverride, setSelectedSizeOverride] = useState(null);
+  // Thumbnail pick, remembered with the shade it was made on so switching shade
+  // always lands on that shade's first photo.
+  const [selectedImagePick, setSelectedImagePick] = useState(null);
   const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
 
@@ -39,6 +86,16 @@ const ProductDetail = () => {
       dispatch(fetchWishlist());
     }
   }, [dispatch, isAuthenticated]);
+
+  // Warm the cache with every shade's photos so a shade switch crossfades
+  // straight away instead of waiting on the network.
+  useEffect(() => {
+    (currentProduct?.images || []).forEach((group) =>
+      group.urls.forEach((url) => {
+        new Image().src = url;
+      })
+    );
+  }, [currentProduct]);
 
   // The shades a shopper can actually buy — driven by real variant data, not a
   // hardcoded guess, so a selectable option always maps to a real SKU. Each
@@ -75,6 +132,11 @@ const ProductDetail = () => {
 
   const imageGroupForColor = currentProduct?.images?.find((group) => group.color === selectedColor);
   const galleryImages = imageGroupForColor?.urls || currentProduct?.images?.[0]?.urls || [];
+  const activeImageIndex =
+    selectedImagePick && selectedImagePick.color === selectedColor && selectedImagePick.index < galleryImages.length
+      ? selectedImagePick.index
+      : 0;
+  const mainImage = galleryImages[activeImageIndex];
   // Only tint when there's no dedicated photo for this exact shade — a real
   // uploaded photo always wins over the simulated color, so an admin can
   // upgrade any shade to real photography later just by naming an image
@@ -154,18 +216,18 @@ const ProductDetail = () => {
           {/* Left column — image gallery */}
           <div className="lg:col-span-6 flex flex-col gap-4">
             <div className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5">
-              {galleryImages[0] && (
-                <img
-                  src={galleryImages[0]}
-                  alt={`${currentProduct.title} — main`}
-                  className={`h-full w-full object-cover transition-[filter] duration-500 ${
-                    shouldTintPreview ? 'filter grayscale contrast-125 brightness-110' : ''
-                  }`}
-                />
-              )}
-              {shouldTintPreview && (
+              <div
+                className={`absolute inset-0 transition-[filter] duration-500 ${
+                  shouldTintPreview ? 'filter grayscale contrast-125 brightness-110' : ''
+                }`}
+              >
+                <CrossfadeImage src={mainImage} alt={`${currentProduct.title} — main`} />
+              </div>
+              {activeShade?.hex && (
                 <div
-                  className="absolute inset-0 mix-blend-color transition-colors duration-500"
+                  className={`absolute inset-0 mix-blend-color transition-all duration-500 ${
+                    shouldTintPreview ? 'opacity-100' : 'opacity-0'
+                  }`}
                   style={{ backgroundColor: activeShade.hex }}
                   aria-hidden="true"
                 />
@@ -176,23 +238,28 @@ const ProductDetail = () => {
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {galleryImages.slice(1).map((image, index) => (
-                <button
-                  key={image}
-                  type="button"
-                  className={`aspect-square overflow-hidden border ${
-                    index === 0 ? 'border-brand' : 'border-white/10'
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt={`${currentProduct.title} — view ${index + 2}`}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {galleryImages.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {galleryImages.map((image, index) => (
+                  <button
+                    key={image}
+                    type="button"
+                    onClick={() => setSelectedImagePick({ color: selectedColor, index })}
+                    aria-label={`Show photo ${index + 1}`}
+                    aria-pressed={index === activeImageIndex}
+                    className={`aspect-square overflow-hidden border transition-colors duration-300 ${
+                      index === activeImageIndex ? 'border-brand' : 'border-white/10 hover:border-brand/60'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${currentProduct.title} — view ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
             {currentProduct.lookbookVideo?.url && (
               <div className="relative aspect-[4/5] overflow-hidden bg-white/5">
                 {/* muted + playsInline are what let iOS Safari autoplay it;
@@ -269,7 +336,7 @@ const ProductDetail = () => {
                     );
                   })}
                 </div>
-                <span className="text-xs text-white/30">Pick a shade — the preview updates instantly.</span>
+                <span className="text-xs text-white/30">Pick a shade to see it.</span>
               </div>
             )}
 

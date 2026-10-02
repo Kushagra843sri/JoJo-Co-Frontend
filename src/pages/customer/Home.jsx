@@ -102,10 +102,10 @@ const Home = () => {
             Delhi Lanes To Dystopia
           </span>
           <h1 className="font-serif text-white text-5xl md:text-7xl leading-tight max-w-3xl">
-            Tailored for the <span className="text-gradient-brand">Season Ahead</span>
+            A wearable <span className="text-gradient-brand">movement</span>
           </h1>
           <p className="text-white/60 max-w-md text-base">
-            Considered fabrics. Structured silhouettes. Built to outlast the trend cycle.
+            Gender fluid. Every piece helps feed a life.
           </p>
         </div>
       </section>
@@ -235,9 +235,6 @@ const Home = () => {
         className={`reveal-on-scroll ${cultVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-24 bg-black border-y border-white/10 flex flex-col items-center text-center gap-6 overflow-hidden`}
       >
         <GlowOrbs />
-        <span className="relative z-10 font-mono text-xs tracking-[0.2em] uppercase text-white/40">
-          Follow @jojo.and.c0mpany
-        </span>
         <a
           href={INSTAGRAM_URL}
           target="_blank"
@@ -263,7 +260,7 @@ const Home = () => {
           </span>
         </a>
         <span className="relative z-10 text-sm text-white/50 max-w-md">
-          Limited drops, restocks, and behind-the-scenes chaos — first on the &#39;gram.
+          And don&rsquo;t miss the chaos behind the brand, along with special drops for members only.
         </span>
       </section>
       </div>

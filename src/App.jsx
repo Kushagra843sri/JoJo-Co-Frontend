@@ -9,6 +9,7 @@ import Cart from './pages/customer/Cart.jsx';
 import Checkout from './pages/customer/Checkout.jsx';
 import OrderResult from './pages/customer/OrderResult.jsx';
 import OrderHistory from './pages/customer/OrderHistory.jsx';
+import Policy from './pages/customer/Policy.jsx';
 import AuthPage from './pages/customer/AuthPage.jsx';
 import VerifyEmail from './pages/customer/VerifyEmail.jsx';
 import ForgotPassword from './pages/customer/ForgotPassword.jsx';
@@ -55,6 +56,7 @@ function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/policy/:slug" element={<Policy />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

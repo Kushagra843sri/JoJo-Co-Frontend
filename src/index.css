@@ -143,6 +143,36 @@ select:-webkit-autofill:focus {
   transition: background-color 600000s 0s, color 600000s 0s;
 }
 
+/* Text-entry fields tell the browser they sit on a dark surface, so its own
+   widgets (autofill/history suggestion popup, number spinners, spellcheck
+   underline) render light-on-dark instead of dark-on-dark. The standard
+   `:autofill` selector covers current Chrome/Firefox/Safari; the -webkit- one
+   above covers older ones. `.sku-input` is the admin SKU field: its text colour
+   is forced (with !important) so no browser state can turn it dark. */
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+textarea:autofill,
+select:autofill {
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: 0 0 0px 1000px #050308 inset;
+  caret-color: #ffffff;
+}
+
+.sku-input,
+.sku-input:focus,
+.sku-input:-webkit-autofill {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-scroll,
   .animate-float-orb,

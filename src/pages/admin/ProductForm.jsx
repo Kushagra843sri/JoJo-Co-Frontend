@@ -18,6 +18,19 @@ const inputClasses =
   'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60';
 const textareaClasses = inputClasses;
 
+const DEFAULT_SHADE_HEX = '#1a1a1a';
+const BASE_IMAGE_GROUP = 'Base';
+
+const emptyFormData = {
+  title: '',
+  description: '',
+  basePrice: '',
+  salePrice: '',
+  category: '',
+  subcategory: '',
+  tags: '',
+};
+
 const MAX_VIDEO_SECONDS = 15;
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
@@ -132,24 +145,19 @@ const ProductForm = () => {
   const [isCategoryActionPending, setIsCategoryActionPending] = useState(false);
   const [categoryActionError, setCategoryActionError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    basePrice: '',
-    salePrice: '',
-    category: '',
-    subcategory: '',
-    tags: '',
-  });
+  const [formData, setFormData] = useState(emptyFormData);
+  // Id of the live product being edited, or null when the form is creating a new one.
+  const [editingId, setEditingId] = useState(null);
+  // Fallback photos used by any shade that has no photos of its own (the product
+  // page tints these live for such shades). Per-shade photos live on each shade.
   const [uploadedImages, setUploadedImages] = useState([]);
   // Optional short clip, stored separately from the photos (see Product.js).
   const [lookbookVideo, setLookbookVideo] = useState(null);
-  // Shades share the same uploaded photo(s) above — the product page tints that
-  // shared photo live with each shade's hex instead of requiring a distinct
-  // photo per color. Naming an uploaded image group after a shade name later
-  // (a separate feature, not in this form) lets a specific shade "graduate" to
-  // a real photo — see the ProductDetail.jsx comment next to shouldTintPreview.
-  const [shades, setShades] = useState(() => [{ id: 'shade-1', name: '', hex: '#1a1a1a' }]);
+  // Each shade can carry its own photos (saved as an image group named after the
+  // shade, which the product page crossfades to when that shade is picked). A
+  // shade with no photos falls back to the shared photos above, tinted live
+  // with its hex — see the ProductDetail.jsx comment next to shouldTintPreview.
+  const [shades, setShades] = useState(() => [{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
   const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', shadeId: 'shade-1', sku: '', stock: 0 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -218,13 +226,17 @@ const ProductForm = () => {
     });
   };
 
-  const handleOpenUploadWidget = async () => {
+  // `onUploaded` receives each finished image URL — the widget fires `success`
+  // once per file, so dropping several files at once calls it several times.
+  const openImageUploadWidget = async (onUploaded) => {
     const cloudinary = await loadCloudinaryWidget();
     cloudinary
       .createUploadWidget(
         {
           cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
           uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
+          multiple: true,
+          resourceType: 'image',
         },
         (uploadError, result) => {
           // The widget sets overflow:hidden on <body> while it's open and is
@@ -240,11 +252,25 @@ const ProductForm = () => {
             return;
           }
           if (result?.event === 'success') {
-            setUploadedImages((prev) => [...prev, result.info.secure_url]);
+            onUploaded(result.info.secure_url);
           }
         }
       )
       .open();
+  };
+
+  const handleOpenUploadWidget = () =>
+    openImageUploadWidget((url) => setUploadedImages((prev) => (prev.includes(url) ? prev : [...prev, url])));
+
+  const handleOpenShadeUploadWidget = (shadeId) =>
+    openImageUploadWidget((url) =>
+      setShades((prev) =>
+        prev.map((s) => (s.id === shadeId && !s.images.includes(url) ? { ...s, images: [...s.images, url] } : s))
+      )
+    );
+
+  const removeShadeImage = (shadeId, url) => {
+    setShades((prev) => prev.map((s) => (s.id === shadeId ? { ...s, images: s.images.filter((u) => u !== url) } : s)));
   };
 
   const handleOpenVideoUploadWidget = async () => {
@@ -294,7 +320,7 @@ const ProductForm = () => {
 
   const addShadeRow = () => {
     const id = `shade-${Date.now()}`;
-    setShades((prev) => [...prev, { id, name: '', hex: '#1a1a1a' }]);
+    setShades((prev) => [...prev, { id, name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
   };
 
   const removeShadeRow = (id) => {
@@ -316,6 +342,81 @@ const ProductForm = () => {
     setVariants((prev) => prev.filter((v) => v.id !== id));
   };
 
+  const resetToNewProduct = () => {
+    setEditingId(null);
+    setFormData(emptyFormData);
+    setUploadedImages([]);
+    setLookbookVideo(null);
+    setShades([{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
+    setVariants([{ id: 'variant-1', size: 'M', shadeId: 'shade-1', sku: '', stock: 0 }]);
+    setError(null);
+    setSuccess(false);
+  };
+
+  // Loads a live product back into the form. Shades are rebuilt from the
+  // variants (one per distinct color); image groups named after a shade go onto
+  // that shade, and every other group (e.g. the shared "Base" one) becomes the
+  // fallback photo list, so saving never drops a photo.
+  const handleStartEdit = (product) => {
+    const shadeByName = new Map();
+    (product.variants || []).forEach((v) => {
+      if (!shadeByName.has(v.color)) {
+        shadeByName.set(v.color, {
+          id: `shade-${shadeByName.size + 1}`,
+          name: v.color,
+          hex: v.colorHex || DEFAULT_SHADE_HEX,
+          images: [],
+        });
+      }
+    });
+
+    const fallbackImages = [];
+    (product.images || []).forEach((group) => {
+      const shade = shadeByName.get(group.color);
+      if (shade) {
+        shade.images = [...group.urls];
+      } else {
+        group.urls.forEach((url) => {
+          if (!fallbackImages.includes(url)) fallbackImages.push(url);
+        });
+      }
+    });
+
+    const loadedShades = shadeByName.size
+      ? [...shadeByName.values()]
+      : [{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }];
+
+    setEditingId(product._id);
+    setFormData({
+      title: product.title || '',
+      description: product.description || '',
+      basePrice: product.basePrice ?? '',
+      salePrice: product.salePrice ?? '',
+      category: product.category || '',
+      subcategory: product.subcategory || '',
+      tags: (product.tags || []).join(', '),
+    });
+    setUploadedImages(fallbackImages);
+    setLookbookVideo(
+      product.lookbookVideo?.url
+        ? { url: product.lookbookVideo.url, posterUrl: product.lookbookVideo.posterUrl }
+        : null
+    );
+    setShades(loadedShades);
+    setVariants(
+      (product.variants || []).map((v, index) => ({
+        id: `variant-${index + 1}`,
+        size: v.size,
+        shadeId: loadedShades.find((s) => s.name === v.color)?.id || null,
+        sku: v.sku,
+        stock: v.stock,
+      }))
+    );
+    setError(null);
+    setSuccess(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -327,6 +428,11 @@ const ProductForm = () => {
     }
     if (shades.some((s) => !s.name.trim())) {
       setError('Every shade needs a name.');
+      return;
+    }
+    const shadeNames = shades.map((s) => s.name.trim().toLowerCase());
+    if (new Set(shadeNames).size !== shadeNames.length) {
+      setError('Shade names must be unique.');
       return;
     }
     if (variants.some((v) => !v.sku.trim())) {
@@ -354,13 +460,16 @@ const ProductForm = () => {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        images: uploadedImages.length > 0 ? [{ color: 'Base', urls: uploadedImages }] : [],
+        images: [
+          ...(uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : []),
+          ...shades.filter((s) => s.images.length > 0).map((s) => ({ color: s.name.trim(), urls: s.images })),
+        ],
         lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => {
           const shade = shadeById.get(v.shadeId);
           return {
             size: v.size,
-            color: shade.name,
+            color: shade.name.trim(),
             colorHex: shade.hex,
             sku: v.sku,
             stock: Number(v.stock),
@@ -368,11 +477,22 @@ const ProductForm = () => {
         }),
       };
 
-      await api.post('/products', payload);
+      if (editingId) {
+        // null (not undefined) so the server clears a removed sale price / video.
+        await api.put(`/products/${editingId}`, {
+          ...payload,
+          salePrice: formData.salePrice !== '' ? Number(formData.salePrice) : null,
+          lookbookVideo: lookbookVideo || null,
+        });
+      } else {
+        await api.post('/products', payload);
+      }
       setSuccess(true);
       dispatch(fetchCatalogProducts({ limit: 50 }));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to publish product');
+      setError(
+        err.response?.data?.message || (editingId ? 'Failed to update product' : 'Failed to publish product')
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -387,12 +507,26 @@ const ProductForm = () => {
         <section className="lg:col-span-9 flex flex-col gap-8">
           <h1 className="font-serif text-3xl text-brand">Publishing Terminal</h1>
 
+          {editingId && (
+            <div className="flex items-center justify-between gap-4 border border-brand/40 bg-brand/10 text-sm text-white/80 px-4 py-4">
+              <span>Editing a live product — changes apply to the storefront as soon as you save.</span>
+              <button
+                type="button"
+                onClick={resetToNewProduct}
+                disabled={isSubmitting}
+                className="flex-none border border-white/20 text-white/70 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60"
+              >
+                Cancel Edit
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="border border-red-500/40 bg-red-950/40 text-red-300 text-sm px-4 py-4">{error}</div>
           )}
           {success && (
             <div className="border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 text-sm px-4 py-4">
-              Product published to the live catalog.
+              {editingId ? 'Product updated on the live catalog.' : 'Product published to the live catalog.'}
             </div>
           )}
 
@@ -512,10 +646,10 @@ const ProductForm = () => {
               <div className="lg:col-span-6 flex flex-col gap-8">
                 {/* Section A — shared lookbook photo(s) */}
                 <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-brand">Lookbook Photo</h2>
+                  <h2 className="font-serif text-lg text-brand">Default Lookbook Photos</h2>
                   <p className="text-xs text-white/40 -mt-2">
-                    Shared across every shade below — the product page tints this same photo live per shade rather
-                    than needing a reshoot per color.
+                    Shown for any shade that has no photos of its own (the product page tints them live in that
+                    shade&apos;s color). Add photos per shade in the Shade Card below to show real photography instead.
                   </p>
                   <div className="flex flex-col gap-4">
                     <button
@@ -524,7 +658,7 @@ const ProductForm = () => {
                       disabled={isSubmitting}
                       className="border border-brand text-brand px-4 py-4 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-brand hover:text-white disabled:opacity-60"
                     >
-                      Upload Lookbook Image
+                      Upload Photos
                     </button>
 
                     {uploadedImages.length > 0 && (
@@ -641,12 +775,13 @@ const ProductForm = () => {
                 <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
                   <h2 className="font-serif text-lg text-brand">Shade Card</h2>
                   <p className="text-xs text-white/40 -mt-2">
-                    Each shade needs an exact color so its swatch and live preview tint match. Reference it from a
-                    variant row below.
+                    Each shade needs an exact color so its swatch matches. Upload photos for a shade and the product
+                    page switches to them when that shade is picked. Reference the shade from a variant row below.
                   </p>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-6">
                     {shades.map((shade) => (
-                      <div key={shade.id} className="flex items-center gap-4">
+                      <div key={shade.id} className="flex flex-col gap-3">
+                      <div className="flex items-center gap-4">
                         <input
                           type="color"
                           value={shade.hex}
@@ -673,6 +808,31 @@ const ProductForm = () => {
                         >
                           ✕
                         </button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 pl-14">
+                        {shade.images.map((url) => (
+                          <div key={url} className="relative h-16 w-16 overflow-hidden bg-white/5">
+                            <img src={url} alt={`${shade.name || 'Shade'} photo`} className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeShadeImage(shade.id, url)}
+                              disabled={isSubmitting}
+                              aria-label="Remove shade photo"
+                              className="absolute top-0.5 right-0.5 h-5 w-5 flex items-center justify-center bg-ink/80 border border-white/20 text-[10px] text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenShadeUploadWidget(shade.id)}
+                          disabled={isSubmitting}
+                          className="h-16 border border-dashed border-white/20 px-4 text-[10px] uppercase tracking-widest text-white/50 transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60"
+                        >
+                          + Shade Photos
+                        </button>
+                      </div>
                       </div>
                     ))}
                   </div>
@@ -740,7 +900,10 @@ const ProductForm = () => {
                                 value={row.sku}
                                 onChange={(e) => handleVariantChange(row.id, 'sku', e.target.value)}
                                 disabled={isSubmitting}
-                                className="w-full bg-transparent border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-label="SKU"
+                                className="sku-input w-full min-w-[9rem] bg-ink border border-white/15 px-4 py-2 text-sm font-mono uppercase text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               />
                             </td>
                             <td className="py-4 pr-6">
@@ -791,7 +954,13 @@ const ProductForm = () => {
               disabled={isSubmitting}
               className="mt-4 w-full btn-glow text-white py-4 text-sm uppercase tracking-widest transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:hover:scale-100"
             >
-              {isSubmitting ? 'Publishing to Live Catalog...' : 'Publish Clothing Article to Live Catalog'}
+              {isSubmitting
+                ? editingId
+                  ? 'Saving Changes...'
+                  : 'Publishing to Live Catalog...'
+                : editingId
+                  ? 'Save Changes to Live Product'
+                  : 'Publish Clothing Article to Live Catalog'}
             </button>
           </form>
 
@@ -828,7 +997,17 @@ const ProductForm = () => {
                               {totalStock}
                             </span>
                           </td>
-                          <td className="py-4">
+                          <td className="py-4"><div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(product)}
+                              disabled={isSubmitting}
+                              className={`border px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60 ${
+                                editingId === product._id ? 'border-brand text-brand' : 'border-white/15 text-white/50'
+                              }`}
+                            >
+                              {editingId === product._id ? 'Editing' : 'Edit'}
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(product)}
@@ -837,6 +1016,7 @@ const ProductForm = () => {
                             >
                               {deletingId === product._id ? 'Deleting...' : 'Delete'}
                             </button>
+                            </div>
                           </td>
                         </tr>
                       );
