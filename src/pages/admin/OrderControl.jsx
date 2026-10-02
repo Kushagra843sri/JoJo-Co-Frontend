@@ -39,7 +39,7 @@ const OrderDetails = ({ order }) => {
             <li key={index}>
               {item.quantity} × {item.product?.title || 'Unknown product'}{' '}
               <span className="text-white/40">
-                ({item.variant.size} / {item.variant.color})
+                ({item.variant.size}{item.variant.color ? ` / ${item.variant.color}` : ''})
               </span>
             </li>
           ))}

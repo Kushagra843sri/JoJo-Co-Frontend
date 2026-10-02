@@ -47,8 +47,12 @@ const Cart = () => {
                     <h3 className="font-serif text-base text-brand">{item.title}</h3>
                     <p className="text-xs text-white/40">
                       Size: {item.size}
-                      <span className="mx-2">/</span>
-                      Color: {item.color}
+                      {item.color && (
+                        <>
+                          <span className="mx-2">/</span>
+                          Color: {item.color}
+                        </>
+                      )}
                     </p>
 
                     <div className="flex items-center justify-between mt-2">

@@ -371,7 +371,7 @@ const OrdersPanel = () => {
                       <div className="flex flex-col gap-1">
                         <span className="text-sm text-white/60">{item.product?.title || 'Product unavailable'}</span>
                         <span className="text-xs text-white/30">
-                          {item.variant.size} / {item.variant.color} × {item.quantity}
+                          {item.variant.size}{item.variant.color ? ` / ${item.variant.color}` : ''} × {item.quantity}
                         </span>
                       </div>
                     </div>

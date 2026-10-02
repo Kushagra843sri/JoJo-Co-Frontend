@@ -18,7 +18,6 @@ const inputClasses =
   'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60';
 const textareaClasses = inputClasses;
 
-const DEFAULT_SHADE_HEX = '#1a1a1a';
 const BASE_IMAGE_GROUP = 'Base';
 
 const emptyFormData = {
@@ -148,17 +147,12 @@ const ProductForm = () => {
   const [formData, setFormData] = useState(emptyFormData);
   // Id of the live product being edited, or null when the form is creating a new one.
   const [editingId, setEditingId] = useState(null);
-  // Fallback photos used by any shade that has no photos of its own (the product
-  // page tints these live for such shades). Per-shade photos live on each shade.
+  // The product's photos, in display order — the product page shows them all and
+  // lets shoppers flip between them.
   const [uploadedImages, setUploadedImages] = useState([]);
   // Optional short clip, stored separately from the photos (see Product.js).
   const [lookbookVideo, setLookbookVideo] = useState(null);
-  // Each shade can carry its own photos (saved as an image group named after the
-  // shade, which the product page crossfades to when that shade is picked). A
-  // shade with no photos falls back to the shared photos above, tinted live
-  // with its hex — see the ProductDetail.jsx comment next to shouldTintPreview.
-  const [shades, setShades] = useState(() => [{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
-  const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', shadeId: 'shade-1', sku: '', stock: 0 }]);
+  const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -262,17 +256,6 @@ const ProductForm = () => {
   const handleOpenUploadWidget = () =>
     openImageUploadWidget((url) => setUploadedImages((prev) => (prev.includes(url) ? prev : [...prev, url])));
 
-  const handleOpenShadeUploadWidget = (shadeId) =>
-    openImageUploadWidget((url) =>
-      setShades((prev) =>
-        prev.map((s) => (s.id === shadeId && !s.images.includes(url) ? { ...s, images: [...s.images, url] } : s))
-      )
-    );
-
-  const removeShadeImage = (shadeId, url) => {
-    setShades((prev) => prev.map((s) => (s.id === shadeId ? { ...s, images: s.images.filter((u) => u !== url) } : s)));
-  };
-
   const handleOpenVideoUploadWidget = async () => {
     setError(null);
     const cloudinary = await loadCloudinaryWidget();
@@ -314,28 +297,12 @@ const ProductForm = () => {
       .open();
   };
 
-  const handleShadeChange = (id, field, value) => {
-    setShades((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
-  };
-
-  const addShadeRow = () => {
-    const id = `shade-${Date.now()}`;
-    setShades((prev) => [...prev, { id, name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
-  };
-
-  const removeShadeRow = (id) => {
-    setShades((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev));
-    // Any variant row pointing at the removed shade falls back to whatever
-    // shade ends up first, rather than silently keeping a dangling reference.
-    setVariants((prev) => prev.map((v) => (v.shadeId === id ? { ...v, shadeId: null } : v)));
-  };
-
   const handleVariantChange = (id, field, value) => {
     setVariants((prev) => prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)));
   };
 
   const addVariantRow = () => {
-    setVariants((prev) => [...prev, { id: `variant-${Date.now()}`, size: 'M', shadeId: shades[0]?.id || null, sku: '', stock: 0 }]);
+    setVariants((prev) => [...prev, { id: `variant-${Date.now()}`, size: 'M', sku: '', stock: 0 }]);
   };
 
   const removeVariantRow = (id) => {
@@ -347,44 +314,22 @@ const ProductForm = () => {
     setFormData(emptyFormData);
     setUploadedImages([]);
     setLookbookVideo(null);
-    setShades([{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }]);
-    setVariants([{ id: 'variant-1', size: 'M', shadeId: 'shade-1', sku: '', stock: 0 }]);
+    setVariants([{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
     setError(null);
     setSuccess(false);
   };
 
-  // Loads a live product back into the form. Shades are rebuilt from the
-  // variants (one per distinct color); image groups named after a shade go onto
-  // that shade, and every other group (e.g. the shared "Base" one) becomes the
-  // fallback photo list, so saving never drops a photo.
+  // Loads a live product back into the form. Photos from every image group are
+  // merged into one list (older products stored them per shade). Variants keep
+  // any legacy color untouched in a hidden field so saving never breaks the
+  // stock/order matching of products created before shades were removed.
   const handleStartEdit = (product) => {
-    const shadeByName = new Map();
-    (product.variants || []).forEach((v) => {
-      if (!shadeByName.has(v.color)) {
-        shadeByName.set(v.color, {
-          id: `shade-${shadeByName.size + 1}`,
-          name: v.color,
-          hex: v.colorHex || DEFAULT_SHADE_HEX,
-          images: [],
-        });
-      }
-    });
-
-    const fallbackImages = [];
-    (product.images || []).forEach((group) => {
-      const shade = shadeByName.get(group.color);
-      if (shade) {
-        shade.images = [...group.urls];
-      } else {
-        group.urls.forEach((url) => {
-          if (!fallbackImages.includes(url)) fallbackImages.push(url);
-        });
-      }
-    });
-
-    const loadedShades = shadeByName.size
-      ? [...shadeByName.values()]
-      : [{ id: 'shade-1', name: '', hex: DEFAULT_SHADE_HEX, images: [] }];
+    const photos = [];
+    (product.images || []).forEach((group) =>
+      group.urls.forEach((url) => {
+        if (!photos.includes(url)) photos.push(url);
+      })
+    );
 
     setEditingId(product._id);
     setFormData({
@@ -396,18 +341,18 @@ const ProductForm = () => {
       subcategory: product.subcategory || '',
       tags: (product.tags || []).join(', '),
     });
-    setUploadedImages(fallbackImages);
+    setUploadedImages(photos);
     setLookbookVideo(
       product.lookbookVideo?.url
         ? { url: product.lookbookVideo.url, posterUrl: product.lookbookVideo.posterUrl }
         : null
     );
-    setShades(loadedShades);
     setVariants(
       (product.variants || []).map((v, index) => ({
         id: `variant-${index + 1}`,
         size: v.size,
-        shadeId: loadedShades.find((s) => s.name === v.color)?.id || null,
+        color: v.color || '',
+        colorHex: v.colorHex,
         sku: v.sku,
         stock: v.stock,
       }))
@@ -426,29 +371,19 @@ const ProductForm = () => {
       setError('Title, Base Price, and Category are required.');
       return;
     }
-    if (shades.some((s) => !s.name.trim())) {
-      setError('Every shade needs a name.');
-      return;
-    }
-    const shadeNames = shades.map((s) => s.name.trim().toLowerCase());
-    if (new Set(shadeNames).size !== shadeNames.length) {
-      setError('Shade names must be unique.');
-      return;
-    }
     if (variants.some((v) => !v.sku.trim())) {
       setError('Every variant row needs a SKU.');
       return;
     }
-    if (variants.some((v) => !v.shadeId || !shades.some((s) => s.id === v.shadeId))) {
-      setError('Every variant row needs a shade selected.');
+    const variantKeys = variants.map((v) => `${v.size}|${(v.color || '').toLowerCase()}`);
+    if (new Set(variantKeys).size !== variantKeys.length) {
+      setError('Each size can only be listed once.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const shadeById = new Map(shades.map((s) => [s.id, s]));
-
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -460,21 +395,15 @@ const ProductForm = () => {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        images: [
-          ...(uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : []),
-          ...shades.filter((s) => s.images.length > 0).map((s) => ({ color: s.name.trim(), urls: s.images })),
-        ],
+        images: uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : [],
         lookbookVideo: lookbookVideo || undefined,
-        variants: variants.map((v) => {
-          const shade = shadeById.get(v.shadeId);
-          return {
-            size: v.size,
-            color: shade.name.trim(),
-            colorHex: shade.hex,
-            sku: v.sku,
-            stock: Number(v.stock),
-          };
-        }),
+        variants: variants.map((v) => ({
+          size: v.size,
+          ...(v.color && { color: v.color }),
+          ...(v.colorHex && { colorHex: v.colorHex }),
+          sku: v.sku,
+          stock: Number(v.stock),
+        })),
       };
 
       if (editingId) {
@@ -646,10 +575,10 @@ const ProductForm = () => {
               <div className="lg:col-span-6 flex flex-col gap-8">
                 {/* Section A — shared lookbook photo(s) */}
                 <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-brand">Default Lookbook Photos</h2>
+                  <h2 className="font-serif text-lg text-brand">Product Photos</h2>
                   <p className="text-xs text-white/40 -mt-2">
-                    Shown for any shade that has no photos of its own (the product page tints them live in that
-                    shade&apos;s color). Add photos per shade in the Shade Card below to show real photography instead.
+                    Upload as many photos as you like — shoppers can flip between all of them on the product page. The
+                    first photo is the cover shown in the catalog and on the home page.
                   </p>
                   <div className="flex flex-col gap-4">
                     <button
@@ -663,9 +592,23 @@ const ProductForm = () => {
 
                     {uploadedImages.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
-                        {uploadedImages.map((url) => (
+                        {uploadedImages.map((url, index) => (
                           <div key={url} className="relative aspect-square overflow-hidden bg-white/5">
                             <img src={url} alt="Uploaded lookbook asset" className="h-full w-full object-cover" />
+                            {index === 0 ? (
+                              <span className="absolute bottom-1 left-1 bg-brand-strong px-2 py-0.5 text-[9px] uppercase tracking-widest text-white">
+                                Cover
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setUploadedImages((prev) => [url, ...prev.filter((u) => u !== url)])}
+                                disabled={isSubmitting}
+                                className="absolute bottom-1 left-1 bg-ink/80 border border-white/20 px-2 py-0.5 text-[9px] uppercase tracking-widest text-white/70 transition-colors duration-200 hover:border-brand hover:text-brand disabled:opacity-40"
+                              >
+                                Make cover
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => setUploadedImages((prev) => prev.filter((u) => u !== url))}
@@ -771,81 +714,6 @@ const ProductForm = () => {
                   </div>
                 </div>
 
-                {/* Section B — shade card definitions */}
-                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
-                  <h2 className="font-serif text-lg text-brand">Shade Card</h2>
-                  <p className="text-xs text-white/40 -mt-2">
-                    Each shade needs an exact color so its swatch matches. Upload photos for a shade and the product
-                    page switches to them when that shade is picked. Reference the shade from a variant row below.
-                  </p>
-                  <div className="flex flex-col gap-6">
-                    {shades.map((shade) => (
-                      <div key={shade.id} className="flex flex-col gap-3">
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="color"
-                          value={shade.hex}
-                          onChange={(e) => handleShadeChange(shade.id, 'hex', e.target.value)}
-                          disabled={isSubmitting}
-                          className="h-10 w-10 flex-none border border-white/15 bg-transparent disabled:opacity-60"
-                          aria-label={`${shade.name || 'Shade'} color`}
-                        />
-                        <input
-                          type="text"
-                          value={shade.name}
-                          onChange={(e) => handleShadeChange(shade.id, 'name', e.target.value)}
-                          disabled={isSubmitting}
-                          placeholder="Jet Black"
-                          className="flex-1 bg-transparent border border-white/15 px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
-                        />
-                        <span className="w-20 flex-none font-mono text-xs uppercase text-white/40">{shade.hex}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeShadeRow(shade.id)}
-                          disabled={isSubmitting || shades.length <= 1}
-                          aria-label="Remove shade"
-                          className="h-8 w-8 flex-none flex items-center justify-center border border-white/15 text-white/40 transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 pl-14">
-                        {shade.images.map((url) => (
-                          <div key={url} className="relative h-16 w-16 overflow-hidden bg-white/5">
-                            <img src={url} alt={`${shade.name || 'Shade'} photo`} className="h-full w-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => removeShadeImage(shade.id, url)}
-                              disabled={isSubmitting}
-                              aria-label="Remove shade photo"
-                              className="absolute top-0.5 right-0.5 h-5 w-5 flex items-center justify-center bg-ink/80 border border-white/20 text-[10px] text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenShadeUploadWidget(shade.id)}
-                          disabled={isSubmitting}
-                          className="h-16 border border-dashed border-white/20 px-4 text-[10px] uppercase tracking-widest text-white/50 transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60"
-                        >
-                          + Shade Photos
-                        </button>
-                      </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addShadeRow}
-                    disabled={isSubmitting}
-                    className="border border-white/15 text-white/60 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60 self-start"
-                  >
-                    + Add Shade
-                  </button>
-                </div>
-
                 {/* Section B — inventory variant matrix */}
                 <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
                   <h2 className="font-serif text-lg text-brand">Inventory Variant Matrix</h2>
@@ -853,7 +721,6 @@ const ProductForm = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-white/40">
-                          <th className="py-4 pr-6 font-medium">Shade</th>
                           <th className="py-4 pr-6 font-medium">Size</th>
                           <th className="py-4 pr-6 font-medium">SKU</th>
                           <th className="py-4 pr-6 font-medium">Stock</th>
@@ -863,23 +730,6 @@ const ProductForm = () => {
                       <tbody>
                         {variants.map((row) => (
                           <tr key={row.id} className="border-b border-white/10">
-                            <td className="py-4 pr-6">
-                              <Select
-                                value={row.shadeId || ''}
-                                onChange={(e) => handleVariantChange(row.id, 'shadeId', e.target.value)}
-                                disabled={isSubmitting}
-                                className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
-                              >
-                                <SelectOption value="" disabled>
-                                  Select a shade
-                                </SelectOption>
-                                {shades.map((shade) => (
-                                  <SelectOption key={shade.id} value={shade.id}>
-                                    {shade.name || 'Untitled shade'}
-                                  </SelectOption>
-                                ))}
-                              </Select>
-                            </td>
                             <td className="py-4 pr-6">
                               <Select
                                 value={row.size}

@@ -27,7 +27,7 @@ const policies = {
     sections: [
       {
         heading: 'Limited pieces',
-        body: 'Every JOJO&CO piece is made in limited quantities and we do not restock sold-out drops, so please check the size and shade you select before you pay.',
+        body: 'Every JOJO&CO piece is made in limited quantities and we do not restock sold-out drops, so please check the size you select before you pay.',
       },
       {
         heading: 'Wrong or damaged items',

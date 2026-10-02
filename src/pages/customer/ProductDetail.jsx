@@ -13,8 +13,8 @@ const dummyReviews = [
   { id: 2, author: 'Rohan K.', rating: 4, text: 'True to size and holds shape after washing. 4/5 stars.' },
 ];
 
-// Image-to-image transition: when `src` changes (a different shade's photo, or
-// another thumbnail) the new photo is stacked on top and fades in only once it
+// Image-to-image transition: when `src` changes (the shopper flips to another
+// photo) the new photo is stacked on top and fades in only once it
 // has actually loaded, while the previous one stays fully visible underneath —
 // so the shopper never sees a blank frame or a hard cut. Superseded layers are
 // dropped shortly after the new one is fully opaque.
@@ -64,16 +64,16 @@ const ProductDetail = () => {
   const { currentProduct, isLoading, error } = useSelector((state) => state.products);
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { items: wishlistItems } = useSelector((state) => state.wishlist);
-  // Nullable overrides: only set once the shopper actually clicks a swatch/size.
+  // Nullable override: only set once the shopper actually clicks a size.
   // The effective selection below falls back to a sane default whenever the
   // override doesn't apply (nothing chosen yet, or the product changed under it) —
   // derived during render instead of synced via effects, so there's no risk of the
   // dependent-effect chain settling a render behind the data it's deriving from.
-  const [selectedColorOverride, setSelectedColorOverride] = useState(null);
   const [selectedSizeOverride, setSelectedSizeOverride] = useState(null);
-  // Thumbnail pick, remembered with the shade it was made on so switching shade
-  // always lands on that shade's first photo.
-  const [selectedImagePick, setSelectedImagePick] = useState(null);
+  // Photo being viewed, remembered with its product so opening another product
+  // always starts on that product's first photo.
+  const [imagePick, setImagePick] = useState({ productId: null, index: 0 });
+  const touchStartX = useRef(null);
   const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
 
@@ -87,7 +87,7 @@ const ProductDetail = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Warm the cache with every shade's photos so a shade switch crossfades
+  // Warm the cache with every photo so flipping between them crossfades
   // straight away instead of waiting on the network.
   useEffect(() => {
     (currentProduct?.images || []).forEach((group) =>
@@ -97,51 +97,56 @@ const ProductDetail = () => {
     );
   }, [currentProduct]);
 
-  // The shades a shopper can actually buy — driven by real variant data, not a
-  // hardcoded guess, so a selectable option always maps to a real SKU. Each
-  // shade also carries its colorHex (if the admin set one) for the shade-card
-  // swatch and the live tint preview below.
+  // Sizes a shopper can actually buy — driven by real variant data so a
+  // selectable option always maps to a real SKU. One entry per size.
   const variants = useMemo(() => currentProduct?.variants || [], [currentProduct]);
-  const shades = useMemo(() => {
+  const sizeOptions = useMemo(() => {
     const seen = new Map();
     variants.forEach((v) => {
-      if (!seen.has(v.color)) {
-        seen.set(v.color, { name: v.color, hex: v.colorHex || null });
-      }
+      if (!seen.has(v.size)) seen.set(v.size, v);
     });
     return [...seen.values()];
   }, [variants]);
-  const colors = useMemo(() => shades.map((shade) => shade.name), [shades]);
-  const selectedColor =
-    selectedColorOverride && colors.includes(selectedColorOverride) ? selectedColorOverride : colors[0] || null;
-  const activeShade = shades.find((shade) => shade.name === selectedColor);
-
-  const sizesForColor = useMemo(
-    () => variants.filter((v) => v.color === selectedColor),
-    [variants, selectedColor]
-  );
   const selectedSize = useMemo(() => {
-    if (selectedSizeOverride && sizesForColor.some((v) => v.size === selectedSizeOverride)) {
+    if (selectedSizeOverride && sizeOptions.some((v) => v.size === selectedSizeOverride)) {
       return selectedSizeOverride;
     }
-    const firstInStock = sizesForColor.find((v) => v.stock > 0) || sizesForColor[0];
+    const firstInStock = sizeOptions.find((v) => v.stock > 0) || sizeOptions[0];
     return firstInStock?.size || null;
-  }, [selectedSizeOverride, sizesForColor]);
+  }, [selectedSizeOverride, sizeOptions]);
 
-  const activeVariant = variants.find((v) => v.color === selectedColor && v.size === selectedSize);
+  const activeVariant = sizeOptions.find((v) => v.size === selectedSize);
 
-  const imageGroupForColor = currentProduct?.images?.find((group) => group.color === selectedColor);
-  const galleryImages = imageGroupForColor?.urls || currentProduct?.images?.[0]?.urls || [];
+  // Every photo of the product, in order. Older products stored photos in
+  // per-shade groups; they're all just photos of the product now.
+  const galleryImages = useMemo(() => {
+    const urls = [];
+    (currentProduct?.images || []).forEach((group) =>
+      group.urls.forEach((url) => {
+        if (!urls.includes(url)) urls.push(url);
+      })
+    );
+    return urls;
+  }, [currentProduct]);
   const activeImageIndex =
-    selectedImagePick && selectedImagePick.color === selectedColor && selectedImagePick.index < galleryImages.length
-      ? selectedImagePick.index
-      : 0;
+    imagePick.productId === currentProduct?._id && imagePick.index < galleryImages.length ? imagePick.index : 0;
   const mainImage = galleryImages[activeImageIndex];
-  // Only tint when there's no dedicated photo for this exact shade — a real
-  // uploaded photo always wins over the simulated color, so an admin can
-  // upgrade any shade to real photography later just by naming an image
-  // group after it (see Product.js / ProductForm.jsx).
-  const shouldTintPreview = Boolean(!imageGroupForColor && activeShade?.hex);
+
+  const showImage = (index) => {
+    if (galleryImages.length === 0) return;
+    setImagePick({ productId: currentProduct._id, index: (index + galleryImages.length) % galleryImages.length });
+  };
+  // Swipe left/right on touch screens to flip photos.
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current == null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) > 40) showImage(activeImageIndex + (delta < 0 ? 1 : -1));
+  };
+  const handleGalleryKeyDown = (e) => {
+    if (e.key === 'ArrowLeft') showImage(activeImageIndex - 1);
+    if (e.key === 'ArrowRight') showImage(activeImageIndex + 1);
+  };
   const isWishlisted = wishlistItems.some((product) => product._id === currentProduct?._id);
 
   const handleToggleWishlist = () => {
@@ -166,7 +171,7 @@ const ProductDetail = () => {
         price: currentProduct.salePrice ?? currentProduct.basePrice,
         image: galleryImages[0],
         size: selectedSize,
-        color: selectedColor,
+        color: activeVariant.color || undefined,
         quantity: 1,
       })
     );
@@ -183,7 +188,7 @@ const ProductDetail = () => {
         price: currentProduct.salePrice ?? currentProduct.basePrice,
         image: galleryImages[0],
         size: selectedSize,
-        color: selectedColor,
+        color: activeVariant.color || undefined,
         quantity: 1,
       })
     );
@@ -215,27 +220,42 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 sm:px-8 py-8">
           {/* Left column — image gallery */}
           <div className="lg:col-span-6 flex flex-col gap-4">
-            <div className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5">
-              <div
-                className={`absolute inset-0 transition-[filter] duration-500 ${
-                  shouldTintPreview ? 'filter grayscale contrast-125 brightness-110' : ''
-                }`}
-              >
-                <CrossfadeImage src={mainImage} alt={`${currentProduct.title} — main`} />
-              </div>
-              {activeShade?.hex && (
-                <div
-                  className={`absolute inset-0 mix-blend-color transition-all duration-500 ${
-                    shouldTintPreview ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  style={{ backgroundColor: activeShade.hex }}
-                  aria-hidden="true"
-                />
-              )}
-              {shouldTintPreview && (
-                <span className="absolute bottom-3 right-3 rounded-full bg-black/60 backdrop-blur px-3 py-1 text-[10px] uppercase tracking-widest text-white/70">
-                  Shade preview
-                </span>
+            <div
+              className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5 focus:outline-none"
+              tabIndex={0}
+              onKeyDown={handleGalleryKeyDown}
+              onTouchStart={(e) => {
+                touchStartX.current = e.touches[0].clientX;
+              }}
+              onTouchEnd={handleTouchEnd}
+            >
+              <CrossfadeImage src={mainImage} alt={`${currentProduct.title} — photo ${activeImageIndex + 1}`} />
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => showImage(activeImageIndex - 1)}
+                    aria-label="Previous photo"
+                    className="absolute left-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-7 7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => showImage(activeImageIndex + 1)}
+                    aria-label="Next photo"
+                    className="absolute right-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white/80 backdrop-blur transition-colors duration-300 hover:bg-black/70 hover:text-brand"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <span className="absolute bottom-3 right-3 z-10 rounded-full bg-black/60 px-3 py-1 text-[10px] uppercase tracking-widest text-white/70 backdrop-blur">
+                    {activeImageIndex + 1} / {galleryImages.length}
+                  </span>
+                </>
               )}
             </div>
             {galleryImages.length > 1 && (
@@ -244,7 +264,7 @@ const ProductDetail = () => {
                   <button
                     key={image}
                     type="button"
-                    onClick={() => setSelectedImagePick({ color: selectedColor, index })}
+                    onClick={() => showImage(index)}
                     aria-label={`Show photo ${index + 1}`}
                     aria-pressed={index === activeImageIndex}
                     className={`aspect-square overflow-hidden border transition-colors duration-300 ${
@@ -301,50 +321,11 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {shades.length > 0 && (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs uppercase tracking-widest text-white/40">Shade Card</span>
-                  <span className="text-xs text-white/50">{activeShade?.name}</span>
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  {shades.map((shade) => {
-                    const isActive = shade.name === selectedColor;
-                    return (
-                      <button
-                        key={shade.name}
-                        type="button"
-                        title={shade.name}
-                        aria-label={`Preview in ${shade.name}`}
-                        onClick={() => {
-                          setSelectedColorOverride(shade.name);
-                          setAddedMessage(null);
-                        }}
-                        className={`relative h-12 w-12 flex-none rounded-full border-2 transition-all duration-300 ${
-                          isActive
-                            ? 'border-brand scale-110 shadow-[0_0_20px_-2px_rgba(168,85,247,0.65)]'
-                            : 'border-white/15 hover:border-brand/60 hover:scale-105'
-                        }`}
-                        style={{ backgroundColor: shade.hex || '#3f3f46' }}
-                      >
-                        {isActive && (
-                          <span className="absolute inset-0 flex items-center justify-center text-white text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <span className="text-xs text-white/30">Pick a shade to see it.</span>
-              </div>
-            )}
-
-            {sizesForColor.length > 0 && (
+            {sizeOptions.length > 0 && (
               <div className="flex flex-col gap-4">
                 <span className="text-xs uppercase tracking-widest text-white/40">Size</span>
                 <div className="flex flex-wrap gap-4">
-                  {sizesForColor.map((variant) => {
+                  {sizeOptions.map((variant) => {
                     const outOfStock = variant.stock < 1;
                     return (
                       <button
