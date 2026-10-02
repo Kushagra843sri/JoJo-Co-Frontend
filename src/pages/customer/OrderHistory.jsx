@@ -23,6 +23,7 @@ const ProfilePanel = () => {
   const { user, isProfileUpdating, profileError } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     name: user?.name || '',
+    phone: user?.phone || '',
     street: user?.shippingAddress?.street || '',
     city: user?.shippingAddress?.city || '',
     state: user?.shippingAddress?.state || '',
@@ -56,6 +57,7 @@ const ProfilePanel = () => {
     await dispatch(
       updateProfile({
         name: formData.name,
+        phone: formData.phone.trim(),
         shippingAddress: {
           street: formData.street,
           city: formData.city,
@@ -115,6 +117,20 @@ const ProfilePanel = () => {
             value={user?.email || ''}
             disabled
             className="w-full border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/30"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xs uppercase tracking-widest text-white/40">Contact Number</label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            disabled={isProfileUpdating}
+            placeholder="+91 98765 43210"
+            autoComplete="tel"
+            className="w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
           />
         </div>
 
