@@ -260,6 +260,7 @@ const Checkout = () => {
                 Secured
               </span>
             </div>
+            <p className="text-xs text-white/40">Since every piece is made to order we don’t offer COD.</p>
           </div>
         </div>
 

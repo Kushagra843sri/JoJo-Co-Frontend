@@ -14,6 +14,7 @@ const Catalog = () => {
   const { categories } = useSelector((state) => state.categories);
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -25,6 +26,7 @@ const Catalog = () => {
   // link to another — a one-time initializer would miss that second click.
   useEffect(() => {
     setSelectedCategory(searchParams.get('category') || '');
+    setSelectedSubcategory(searchParams.get('subcategory') || '');
   }, [searchParams]);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ const Catalog = () => {
       dispatch(
         fetchCatalogProducts({
           category: selectedCategory,
+          subcategory: selectedSubcategory,
           size: selectedSize,
           search: searchTerm,
           sort: sortOrder,
@@ -40,7 +43,7 @@ const Catalog = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [dispatch, selectedCategory, selectedSize, searchTerm, sortOrder]);
+  }, [dispatch, selectedCategory, selectedSubcategory, selectedSize, searchTerm, sortOrder]);
 
   return (
     <div className="w-full bg-ink min-h-screen">
@@ -54,17 +57,35 @@ const Catalog = () => {
             <h2 className="font-serif text-lg text-brand mb-2">Categories</h2>
             <div className="flex flex-col gap-4">
               {categories.map((category) => (
-                <label key={category._id} className="flex items-center gap-4 text-sm text-white/70">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategory === category.name}
-                    onChange={() =>
-                      setSelectedCategory((prev) => (prev === category.name ? '' : category.name))
-                    }
-                    className="h-4 w-4 accent-brand"
-                  />
-                  {category.name}
-                </label>
+                <div key={category._id} className="flex flex-col gap-3">
+                  <label className="flex items-center gap-4 text-sm text-white/70">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategory === category.name}
+                      onChange={() => {
+                        setSelectedCategory((prev) => (prev === category.name ? '' : category.name));
+                        setSelectedSubcategory('');
+                      }}
+                      className="h-4 w-4 accent-brand"
+                    />
+                    {category.name}
+                  </label>
+                  {selectedCategory === category.name && category.subcategories.length > 0 && (
+                    <div className="ml-8 flex flex-col gap-3 border-l border-white/10 pl-4">
+                      {category.subcategories.map((sub) => (
+                        <label key={sub} className="flex items-center gap-4 text-xs text-white/60">
+                          <input
+                            type="checkbox"
+                            checked={selectedSubcategory.toLowerCase() === sub.toLowerCase()}
+                            onChange={() => setSelectedSubcategory((prev) => (prev.toLowerCase() === sub.toLowerCase() ? '' : sub))}
+                            className="h-3.5 w-3.5 accent-brand"
+                          />
+                          {sub}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>

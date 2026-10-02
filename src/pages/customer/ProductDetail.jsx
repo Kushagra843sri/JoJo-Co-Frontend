@@ -415,8 +415,9 @@ const ProductDetail = () => {
             <div className="flex flex-col gap-2 border-t border-white/10 pt-6">
               <span className="text-xs uppercase tracking-widest text-white/40">Fulfillment &amp; Trust</span>
               <p className="text-sm text-white/60">
-                Accepted Payment Methods: UPI, Cash on Delivery (COD), Credit/Debit Cards
+                Accepted Payment Methods: UPI, Credit/Debit Cards
               </p>
+              <p className="text-xs text-white/40">Since every piece is made to order we don’t offer COD.</p>
             </div>
 
             <div className="border border-white/10">

@@ -48,7 +48,7 @@ const policies = {
       },
       {
         heading: 'Payment options',
-        body: 'You can pay by UPI, Cash on Delivery (COD), or credit/debit card.',
+        body: 'You can pay by UPI or credit/debit card. Since every piece is made to order we don’t offer COD.',
       },
       {
         heading: 'Questions about a delivery',
@@ -61,7 +61,11 @@ const policies = {
     sections: [
       {
         heading: 'Which payment methods do you accept?',
-        body: 'UPI, Cash on Delivery (COD), and credit/debit cards.',
+        body: 'UPI and credit/debit cards.',
+      },
+      {
+        heading: 'Do you offer Cash on Delivery (COD)?',
+        body: 'Since every piece is made to order we don’t offer COD.',
       },
       {
         heading: 'Will sold-out pieces come back?',

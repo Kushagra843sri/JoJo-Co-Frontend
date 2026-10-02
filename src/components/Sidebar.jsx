@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
@@ -8,6 +9,8 @@ import { useSelector } from 'react-redux';
 // itself; this is for everything else, like Admin Dashboard).
 const Sidebar = ({ isOpen, onClose, isAdmin }) => {
   const categories = useSelector((state) => state.categories.categories);
+  // Which category's subcategory list is unfolded (one at a time).
+  const [expanded, setExpanded] = useState(null);
   if (!isOpen) return null;
 
   return (
@@ -48,16 +51,75 @@ const Sidebar = ({ isOpen, onClose, isAdmin }) => {
         )}
 
         <span className="mt-4 px-2 text-xs uppercase tracking-widest text-white/30">Shop By Category</span>
-        {categories.map((category) => (
-          <Link
-            key={category._id}
-            to={`/catalog?category=${encodeURIComponent(category.name)}`}
-            onClick={onClose}
-            className="px-2 py-3 text-sm uppercase tracking-widest text-white/60 transition-colors duration-300 hover:text-brand"
-          >
-            {category.name}
-          </Link>
-        ))}
+        {categories.map((category) => {
+          const categoryUrl = `/catalog?category=${encodeURIComponent(category.name)}`;
+          const hasSubcategories = category.subcategories?.length > 0;
+          const isExpanded = expanded === category._id;
+
+          // A category with subcategories unfolds them below instead of
+          // navigating away, so the shopper can pick "Shirts" rather than all of
+          // "Upperwear"; one without any still links straight to its catalog view.
+          if (!hasSubcategories) {
+            return (
+              <Link
+                key={category._id}
+                to={categoryUrl}
+                onClick={onClose}
+                className="px-2 py-3 text-sm uppercase tracking-widest text-white/60 transition-colors duration-300 hover:text-brand"
+              >
+                {category.name}
+              </Link>
+            );
+          }
+
+          return (
+            <div key={category._id} className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => setExpanded(isExpanded ? null : category._id)}
+                aria-expanded={isExpanded}
+                className={`flex items-center justify-between px-2 py-3 text-left text-sm uppercase tracking-widest transition-colors duration-300 hover:text-brand ${
+                  isExpanded ? 'text-brand' : 'text-white/60'
+                }`}
+              >
+                {category.name}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                  className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+                </svg>
+              </button>
+              {isExpanded && (
+                <div className="ml-3 mb-2 flex flex-col border-l border-white/10 pl-3">
+                  <Link
+                    to={categoryUrl}
+                    onClick={onClose}
+                    className="px-2 py-2 text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 hover:text-brand"
+                  >
+                    All {category.name}
+                  </Link>
+                  {category.subcategories.map((sub) => (
+                    <Link
+                      key={sub}
+                      to={`${categoryUrl}&subcategory=${encodeURIComponent(sub)}`}
+                      onClick={onClose}
+                      className="px-2 py-2 text-xs uppercase tracking-widest text-white/60 transition-colors duration-300 hover:text-brand"
+                    >
+                      {sub}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         <Link
           to="/catalog"
