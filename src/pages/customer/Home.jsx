@@ -7,6 +7,7 @@ import Footer from '../../components/Footer.jsx';
 import GlowOrbs from '../../components/GlowOrbs.jsx';
 import MarqueeStrip from '../../components/MarqueeStrip.jsx';
 import { useReveal } from '../../hooks/useReveal.js';
+import { getCoverPhoto, getShowcasePhotos } from '../../utils/productImages.js';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/jojo.and.c0mpany/';
 
@@ -49,12 +50,12 @@ const Home = () => {
     dispatch(fetchCatalogProducts({ sort: 'newest', limit: 4 }));
   }, [dispatch]);
 
-  // Every lookbook image across the fetched products, doubled below so the
+  // Every clothing photo (size charts excluded) across the fetched products, doubled below so the
   // strip can loop seamlessly (a plain translateX(-100%) would snap back to
   // start; -50% on a doubled list is invisible since the second half is an
   // exact copy of the first).
   const heroImages = useMemo(
-    () => products.flatMap((product) => product.images?.flatMap((group) => group.urls) || []).filter(Boolean),
+    () => products.flatMap((product) => getShowcasePhotos(product)),
     [products]
   );
 
@@ -180,7 +181,7 @@ const Home = () => {
         {!isLoading && products.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {products.map((product) => {
-              const imageUrl = product.images?.[0]?.urls?.[0];
+              const imageUrl = getCoverPhoto(product);
               const onSale = product.salePrice != null;
 
               return (

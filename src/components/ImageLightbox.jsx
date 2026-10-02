@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import useSwipe from '../hooks/useSwipe.js';
 
 // Full-screen photo viewer for the product page. Controlled by the parent
 // (`index` / `onIndexChange`) so flipping photos here also moves the page's own
@@ -6,7 +7,6 @@ import { useEffect, useRef, useState } from 'react';
 // < > buttons, ← → keys, or a swipe on touch screens.
 const ImageLightbox = ({ images, index, title, onIndexChange, onClose }) => {
   const closeButtonRef = useRef(null);
-  const touchStartX = useRef(null);
   const [loadedSrc, setLoadedSrc] = useState(null);
   const count = images.length;
   const src = images[index];
@@ -35,12 +35,10 @@ const ImageLightbox = ({ images, index, title, onIndexChange, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [index, count, onClose, onIndexChange]);
 
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current == null || count < 2) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(delta) > 40) go(index + (delta < 0 ? 1 : -1));
-  };
+  // Ignores pinch-zoom and panning while zoomed in (see useSwipe).
+  const swipeHandlers = useSwipe((direction) => {
+    if (count > 1) go(index + direction);
+  });
 
   const arrowClasses =
     'absolute top-1/2 z-10 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors duration-300 hover:bg-white/20 hover:text-brand active:scale-95';
@@ -52,10 +50,7 @@ const ImageLightbox = ({ images, index, title, onIndexChange, onClose }) => {
       aria-label={`${title} — photos`}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black"
       onClick={onClose}
-      onTouchStart={(e) => {
-        touchStartX.current = e.touches[0].clientX;
-      }}
-      onTouchEnd={handleTouchEnd}
+      {...swipeHandlers}
     >
       <button
         ref={closeButtonRef}

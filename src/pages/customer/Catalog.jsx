@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
+import { getCoverPhoto } from '../../utils/productImages.js';
 import Select, { SelectOption } from '../../components/Select.jsx';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL'];
@@ -142,7 +143,7 @@ const Catalog = () => {
           {!isLoading && !error && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => {
-                const imageUrl = product.images?.[0]?.urls?.[0];
+                const imageUrl = getCoverPhoto(product);
                 const onSale = product.salePrice != null;
 
                 return (

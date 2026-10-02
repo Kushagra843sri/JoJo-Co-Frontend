@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMyOrders } from '../../store/slices/ordersSlice.js';
 import { logoutUser, updateProfile } from '../../store/slices/authSlice.js';
+import { getCoverPhoto } from '../../utils/productImages.js';
 import { fetchWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
@@ -228,7 +229,7 @@ const WishlistPanel = () => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
       {items.map((product) => {
-        const imageUrl = product.images?.[0]?.urls?.[0];
+        const imageUrl = getCoverPhoto(product);
         return (
           <div key={product._id} className="flex flex-col gap-4">
             <Link to={`/product/${product._id}`} className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5 block">
@@ -356,7 +357,7 @@ const OrdersPanel = () => {
               {/* Item preview strip */}
               <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10">
                 {order.items.map((item, index) => {
-                  const imageUrl = item.product?.images?.[0]?.urls?.[0];
+                  const imageUrl = getCoverPhoto(item.product);
                   return (
                     <div key={`${order._id}-${index}`} className="flex items-center gap-4">
                       <div className="h-16 w-16 flex-none overflow-hidden bg-white/5">

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 
 import Home from './pages/customer/Home.jsx';
@@ -19,6 +19,22 @@ import ProductForm from './pages/admin/ProductForm.jsx';
 import OrderControl from './pages/admin/OrderControl.jsx';
 import { loginSuccess, checkAuth } from './store/slices/authSlice.js';
 import { fetchCategories } from './store/slices/categorySlice.js';
+
+// React Router keeps the previous page's scroll offset when the route changes, so
+// opening a product from the bottom of the home page used to land you at the
+// bottom of the product page. Scroll to the top on every new page visit — but not
+// on Back/Forward (POP), where returning to where you were is what people expect.
+// Only the pathname matters: filter changes on /catalog (?category=…) stay put.
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+
+  useEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo(0, 0);
+  }, [pathname, navigationType]);
+
+  return null;
+};
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -51,6 +67,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/catalog" element={<Catalog />} />

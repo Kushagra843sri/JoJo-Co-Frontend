@@ -7,6 +7,8 @@ import { fetchWishlist, addToWishlist, removeFromWishlist } from '../../store/sl
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import ImageLightbox from '../../components/ImageLightbox.jsx';
+import useSwipe from '../../hooks/useSwipe.js';
+import { getCoverPhoto, getProductPhotos } from '../../utils/productImages.js';
 import { getVideoDeliveryUrl } from '../../utils/cloudinaryVideo.js';
 
 const dummyReviews = [
@@ -74,7 +76,6 @@ const ProductDetail = () => {
   // Photo being viewed, remembered with its product so opening another product
   // always starts on that product's first photo.
   const [imagePick, setImagePick] = useState({ productId: null, index: 0 });
-  const touchStartX = useRef(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
@@ -121,15 +122,7 @@ const ProductDetail = () => {
 
   // Every photo of the product, in order. Older products stored photos in
   // per-shade groups; they're all just photos of the product now.
-  const galleryImages = useMemo(() => {
-    const urls = [];
-    (currentProduct?.images || []).forEach((group) =>
-      group.urls.forEach((url) => {
-        if (!urls.includes(url)) urls.push(url);
-      })
-    );
-    return urls;
-  }, [currentProduct]);
+  const galleryImages = useMemo(() => getProductPhotos(currentProduct), [currentProduct]);
   const activeImageIndex =
     imagePick.productId === currentProduct?._id && imagePick.index < galleryImages.length ? imagePick.index : 0;
   const mainImage = galleryImages[activeImageIndex];
@@ -138,13 +131,8 @@ const ProductDetail = () => {
     if (galleryImages.length === 0) return;
     setImagePick({ productId: currentProduct._id, index: (index + galleryImages.length) % galleryImages.length });
   };
-  // Swipe left/right on touch screens to flip photos.
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current == null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(delta) > 40) showImage(activeImageIndex + (delta < 0 ? 1 : -1));
-  };
+  // Swipe left/right on touch screens to flip photos (ignores pinch-zoom).
+  const swipeHandlers = useSwipe((direction) => showImage(activeImageIndex + direction));
   const handleGalleryKeyDown = (e) => {
     if (e.key === 'ArrowLeft') showImage(activeImageIndex - 1);
     if (e.key === 'ArrowRight') showImage(activeImageIndex + 1);
@@ -171,7 +159,7 @@ const ProductDetail = () => {
         productId: currentProduct._id,
         title: currentProduct.title,
         price: currentProduct.salePrice ?? currentProduct.basePrice,
-        image: galleryImages[0],
+        image: getCoverPhoto(currentProduct),
         size: selectedSize,
         color: activeVariant.color || undefined,
         quantity: 1,
@@ -188,7 +176,7 @@ const ProductDetail = () => {
         productId: currentProduct._id,
         title: currentProduct.title,
         price: currentProduct.salePrice ?? currentProduct.basePrice,
-        image: galleryImages[0],
+        image: getCoverPhoto(currentProduct),
         size: selectedSize,
         color: activeVariant.color || undefined,
         quantity: 1,
@@ -226,10 +214,7 @@ const ProductDetail = () => {
               className="tilt-card relative aspect-[4/5] overflow-hidden bg-white/5 focus:outline-none"
               tabIndex={0}
               onKeyDown={handleGalleryKeyDown}
-              onTouchStart={(e) => {
-                touchStartX.current = e.touches[0].clientX;
-              }}
-              onTouchEnd={handleTouchEnd}
+              {...swipeHandlers}
             >
               <CrossfadeImage src={mainImage} alt={`${currentProduct.title} — photo ${activeImageIndex + 1}`} />
               {mainImage && (

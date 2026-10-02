@@ -150,6 +150,9 @@ const ProductForm = () => {
   // The product's photos, in display order — the product page shows them all and
   // lets shoppers flip between them.
   const [uploadedImages, setUploadedImages] = useState([]);
+  // Photos (a subset of uploadedImages) flagged as size charts: shown in the product-page
+  // gallery but kept off the home page strip and never used as a cover photo.
+  const [sizeChartUrls, setSizeChartUrls] = useState([]);
   // Optional short clip, stored separately from the photos (see Product.js).
   const [lookbookVideo, setLookbookVideo] = useState(null);
   const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
@@ -313,6 +316,7 @@ const ProductForm = () => {
     setEditingId(null);
     setFormData(emptyFormData);
     setUploadedImages([]);
+    setSizeChartUrls([]);
     setLookbookVideo(null);
     setVariants([{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
     setError(null);
@@ -342,6 +346,7 @@ const ProductForm = () => {
       tags: (product.tags || []).join(', '),
     });
     setUploadedImages(photos);
+    setSizeChartUrls((product.sizeChartUrls || []).filter((url) => photos.includes(url)));
     setLookbookVideo(
       product.lookbookVideo?.url
         ? { url: product.lookbookVideo.url, posterUrl: product.lookbookVideo.posterUrl }
@@ -396,6 +401,7 @@ const ProductForm = () => {
           .map((t) => t.trim())
           .filter(Boolean),
         images: uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : [],
+        sizeChartUrls: sizeChartUrls.filter((url) => uploadedImages.includes(url)),
         lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => ({
           size: v.size,
@@ -578,7 +584,9 @@ const ProductForm = () => {
                   <h2 className="font-serif text-lg text-brand">Product Photos</h2>
                   <p className="text-xs text-white/40 -mt-2">
                     Upload as many photos as you like — shoppers can flip between all of them on the product page. The
-                    first photo is the cover shown in the catalog and on the home page.
+                    first photo is the cover shown in the catalog and on the home page. Tick <strong>Size chart</strong> on
+                    a photo of a size chart: it still shows on the product page, but never on the home page strip or as
+                    the cover.
                   </p>
                   <div className="flex flex-col gap-4">
                     <button
@@ -595,8 +603,20 @@ const ProductForm = () => {
                         {uploadedImages.map((url, index) => (
                           <div key={url} className="relative aspect-square overflow-hidden bg-white/5">
                             <img src={url} alt="Uploaded lookbook asset" className="h-full w-full object-cover" />
+                            <label className="absolute inset-x-1 bottom-1 flex cursor-pointer items-center justify-center gap-1 bg-ink/80 border border-white/20 px-2 py-0.5 text-[9px] uppercase tracking-widest text-white/70">
+                              <input
+                                type="checkbox"
+                                checked={sizeChartUrls.includes(url)}
+                                onChange={(e) =>
+                                  setSizeChartUrls((prev) => (e.target.checked ? [...prev, url] : prev.filter((u) => u !== url)))
+                                }
+                                disabled={isSubmitting}
+                                className="h-3 w-3 accent-brand"
+                              />
+                              Size chart
+                            </label>
                             {index === 0 ? (
-                              <span className="absolute bottom-1 left-1 bg-brand-strong px-2 py-0.5 text-[9px] uppercase tracking-widest text-white">
+                              <span className="absolute top-1 left-1 bg-brand-strong px-2 py-0.5 text-[9px] uppercase tracking-widest text-white">
                                 Cover
                               </span>
                             ) : (
@@ -604,14 +624,17 @@ const ProductForm = () => {
                                 type="button"
                                 onClick={() => setUploadedImages((prev) => [url, ...prev.filter((u) => u !== url)])}
                                 disabled={isSubmitting}
-                                className="absolute bottom-1 left-1 bg-ink/80 border border-white/20 px-2 py-0.5 text-[9px] uppercase tracking-widest text-white/70 transition-colors duration-200 hover:border-brand hover:text-brand disabled:opacity-40"
+                                className="absolute top-1 left-1 bg-ink/80 border border-white/20 px-2 py-0.5 text-[9px] uppercase tracking-widest text-white/70 transition-colors duration-200 hover:border-brand hover:text-brand disabled:opacity-40"
                               >
                                 Make cover
                               </button>
                             )}
                             <button
                               type="button"
-                              onClick={() => setUploadedImages((prev) => prev.filter((u) => u !== url))}
+                              onClick={() => {
+                                setUploadedImages((prev) => prev.filter((u) => u !== url));
+                                setSizeChartUrls((prev) => prev.filter((u) => u !== url));
+                              }}
                               disabled={isSubmitting}
                               aria-label="Remove image"
                               className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center bg-ink/80 border border-white/20 text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
