@@ -8,7 +8,7 @@ import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import ImageLightbox from '../../components/ImageLightbox.jsx';
 import useSwipe from '../../hooks/useSwipe.js';
-import { getCoverPhoto, getProductPhotos } from '../../utils/productImages.js';
+import { getCoverPhoto, getShowcasePhotos, getSizeCharts, getUnitPrice, hasSale } from '../../utils/productImages.js';
 import { getVideoDeliveryUrl } from '../../utils/cloudinaryVideo.js';
 
 const dummyReviews = [
@@ -77,6 +77,8 @@ const ProductDetail = () => {
   // always starts on that product's first photo.
   const [imagePick, setImagePick] = useState({ productId: null, index: 0 });
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
+  const [sizeChartIndex, setSizeChartIndex] = useState(0);
   const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
 
@@ -122,7 +124,9 @@ const ProductDetail = () => {
 
   // Every photo of the product, in order. Older products stored photos in
   // per-shade groups; they're all just photos of the product now.
-  const galleryImages = useMemo(() => getProductPhotos(currentProduct), [currentProduct]);
+  // Size charts are excluded here — they open from the "View size chart" link instead.
+  const galleryImages = useMemo(() => getShowcasePhotos(currentProduct), [currentProduct]);
+  const sizeCharts = useMemo(() => getSizeCharts(currentProduct), [currentProduct]);
   const activeImageIndex =
     imagePick.productId === currentProduct?._id && imagePick.index < galleryImages.length ? imagePick.index : 0;
   const mainImage = galleryImages[activeImageIndex];
@@ -158,7 +162,7 @@ const ProductDetail = () => {
       addItem({
         productId: currentProduct._id,
         title: currentProduct.title,
-        price: currentProduct.salePrice ?? currentProduct.basePrice,
+        price: getUnitPrice(currentProduct),
         image: getCoverPhoto(currentProduct),
         size: selectedSize,
         color: activeVariant.color || undefined,
@@ -175,7 +179,7 @@ const ProductDetail = () => {
       addItem({
         productId: currentProduct._id,
         title: currentProduct.title,
-        price: currentProduct.salePrice ?? currentProduct.basePrice,
+        price: getUnitPrice(currentProduct),
         image: getCoverPhoto(currentProduct),
         size: selectedSize,
         color: activeVariant.color || undefined,
@@ -306,7 +310,7 @@ const ProductDetail = () => {
             <p className="text-sm text-white/60 leading-relaxed">{currentProduct.description}</p>
 
             <div className="flex items-baseline gap-4">
-              {currentProduct.salePrice != null ? (
+              {hasSale(currentProduct) ? (
                 <>
                   <span className="text-white/30 line-through text-lg">₹{currentProduct.basePrice}</span>
                   <span className="text-brand-strong font-semibold text-xl">₹{currentProduct.salePrice}</span>
@@ -318,7 +322,21 @@ const ProductDetail = () => {
 
             {sizeOptions.length > 0 && (
               <div className="flex flex-col gap-4">
-                <span className="text-xs uppercase tracking-widest text-white/40">Size</span>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-xs uppercase tracking-widest text-white/40">Size</span>
+                  {sizeCharts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSizeChartIndex(0);
+                        setIsSizeChartOpen(true);
+                      }}
+                      className="text-xs uppercase tracking-widest text-brand underline underline-offset-4 transition-colors duration-300 hover:text-white"
+                    >
+                      View size chart
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-4">
                   {sizeOptions.map((variant) => {
                     const outOfStock = variant.stock < 1;
@@ -433,6 +451,16 @@ const ProductDetail = () => {
           title={currentProduct.title}
           onIndexChange={showImage}
           onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
+
+      {isSizeChartOpen && sizeCharts.length > 0 && (
+        <ImageLightbox
+          images={sizeCharts}
+          index={sizeChartIndex}
+          title={`${currentProduct.title} size chart`}
+          onIndexChange={setSizeChartIndex}
+          onClose={() => setIsSizeChartOpen(false)}
         />
       )}
 

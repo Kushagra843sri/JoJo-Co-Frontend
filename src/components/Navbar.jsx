@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar.jsx';
@@ -14,6 +14,13 @@ const Navbar = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { items } = useSelector((state) => state.cart);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Lets other pages (e.g. the Catalog's "← Categories" button) reopen the drawer.
+  useEffect(() => {
+    const open = () => setIsSidebarOpen(true);
+    window.addEventListener('open-sidebar', open);
+    return () => window.removeEventListener('open-sidebar', open);
+  }, []);
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 

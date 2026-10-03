@@ -5,6 +5,7 @@ import { logoutUser } from '../store/slices/authSlice.js';
 const adminTabs = [
   { id: 'dashboard', label: 'Dashboard', path: '/admin' },
   { id: 'inventory', label: 'Inventory Manager', path: '/admin/products' },
+  { id: 'published', label: 'Published Products', path: '/admin/published' },
   { id: 'fulfillment', label: 'Fulfillment Logs', path: '/admin/orders' },
   { id: 'store', label: 'Store View', path: '/' },
 ];

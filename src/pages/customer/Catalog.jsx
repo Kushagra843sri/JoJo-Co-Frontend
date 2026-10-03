@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
-import { getCoverPhoto } from '../../utils/productImages.js';
+import { getCoverPhoto, getUnitPrice, hasSale } from '../../utils/productImages.js';
 import Select, { SelectOption } from '../../components/Select.jsx';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL'];
@@ -17,7 +17,8 @@ const Catalog = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Filters stay hidden until the shopper opens them with the hamburger button.
+  const [showFilters, setShowFilters] = useState(false);
   const [sortOrder, setSortOrder] = useState('asc');
 
   // Seeds/updates the filter from ?category= so a Sidebar category link (e.g.
@@ -37,14 +38,13 @@ const Catalog = () => {
           category: selectedCategory,
           subcategory: selectedSubcategory,
           size: selectedSize,
-          search: searchTerm,
           sort: sortOrder,
         })
       );
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [dispatch, selectedCategory, selectedSubcategory, selectedSize, searchTerm, sortOrder]);
+  }, [dispatch, selectedCategory, selectedSubcategory, selectedSize, sortOrder]);
 
   return (
     <div className="w-full bg-ink min-h-screen">
@@ -52,45 +52,9 @@ const Catalog = () => {
       <Navbar />
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 sm:px-8 pt-28 pb-8">
-        {/* Left filter sidebar */}
+        {/* Left filter sidebar — hidden until toggled */}
+        {showFilters && (
         <aside className="md:col-span-3 flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <h2 className="font-serif text-lg text-brand mb-2">Categories</h2>
-            <div className="flex flex-col gap-4">
-              {categories.map((category) => (
-                <div key={category._id} className="flex flex-col gap-3">
-                  <label className="flex items-center gap-4 text-sm text-white/70">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategory === category.name}
-                      onChange={() => {
-                        setSelectedCategory((prev) => (prev === category.name ? '' : category.name));
-                        setSelectedSubcategory('');
-                      }}
-                      className="h-4 w-4 accent-brand"
-                    />
-                    {category.name}
-                  </label>
-                  {selectedCategory === category.name && category.subcategories.length > 0 && (
-                    <div className="ml-8 flex flex-col gap-3 border-l border-white/10 pl-4">
-                      {category.subcategories.map((sub) => (
-                        <label key={sub} className="flex items-center gap-4 text-xs text-white/60">
-                          <input
-                            type="checkbox"
-                            checked={selectedSubcategory.toLowerCase() === sub.toLowerCase()}
-                            onChange={() => setSelectedSubcategory((prev) => (prev.toLowerCase() === sub.toLowerCase() ? '' : sub))}
-                            className="h-3.5 w-3.5 accent-brand"
-                          />
-                          {sub}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="flex flex-col gap-4">
             <h2 className="font-serif text-lg text-brand mb-2">Available Sizes</h2>
             <div className="flex flex-wrap gap-4">
@@ -111,18 +75,43 @@ const Catalog = () => {
             </div>
           </div>
         </aside>
+        )}
 
         {/* Right catalog workspace */}
-        <section className="md:col-span-9 flex flex-col gap-8">
+        <section className={`${showFilters ? 'md:col-span-9' : 'md:col-span-12'} flex flex-col gap-8`}>
+          {/* Current category + way back to the category list (the nav drawer) */}
+          {selectedCategory && (
+            <div className="flex items-center gap-4 text-xs uppercase tracking-widest">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('open-sidebar'))}
+                className="flex items-center gap-2 border border-white/15 px-4 py-2 text-white/70 transition-colors duration-300 hover:border-brand hover:text-brand"
+              >
+                <span aria-hidden="true">←</span> Categories
+              </button>
+              <span className="text-white/40">
+                {selectedCategory}
+                {selectedSubcategory && <> <span className="mx-1">/</span> <span className="text-brand">{selectedSubcategory}</span></>}
+              </span>
+            </div>
+          )}
+
           {/* Control strip */}
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between p-4 border border-white/10">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search the collection"
-              className="w-full sm:w-64 px-4 py-2 text-sm bg-transparent text-white border border-white/15 placeholder:text-white/30 focus:outline-none focus:border-brand"
-            />
+          <div className="flex flex-row gap-4 items-center justify-between p-4 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setShowFilters((prev) => !prev)}
+              aria-expanded={showFilters}
+              aria-label={showFilters ? 'Hide size filter' : 'Show size filter'}
+              className={`flex items-center gap-3 px-4 py-2 text-xs uppercase tracking-widest border transition-colors duration-300 hover:border-brand hover:text-brand ${
+                showFilters ? 'border-brand text-brand' : 'border-white/15 text-white/70'
+              }`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+              </svg>
+              Sizes
+            </button>
             <Select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
@@ -144,7 +133,7 @@ const Catalog = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => {
                 const imageUrl = getCoverPhoto(product);
-                const onSale = product.salePrice != null;
+                const onSale = hasSale(product);
 
                 return (
                   <Link key={product._id} to={`/product/${product._id}`} className="flex flex-col gap-4">
@@ -160,7 +149,7 @@ const Catalog = () => {
                     </div>
                     <div className="flex flex-col gap-2">
                       <h3 className="font-serif text-lg text-brand">{product.title}</h3>
-                      <p className="text-sm text-white/60">₹{product.salePrice ?? product.basePrice}</p>
+                      <p className="text-sm text-white/60">₹{getUnitPrice(product)}</p>
                     </div>
                   </Link>
                 );

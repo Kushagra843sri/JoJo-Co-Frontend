@@ -16,6 +16,7 @@ import ForgotPassword from './pages/customer/ForgotPassword.jsx';
 import ResetPassword from './pages/customer/ResetPassword.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import ProductForm from './pages/admin/ProductForm.jsx';
+import PublishedProducts from './pages/admin/PublishedProducts.jsx';
 import OrderControl from './pages/admin/OrderControl.jsx';
 import { loginSuccess, checkAuth } from './store/slices/authSlice.js';
 import { fetchCategories } from './store/slices/categorySlice.js';
@@ -118,6 +119,14 @@ function App() {
           element={
             <AdminRoute>
               <ProductForm />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/published"
+          element={
+            <AdminRoute>
+              <PublishedProducts />
             </AdminRoute>
           }
         />

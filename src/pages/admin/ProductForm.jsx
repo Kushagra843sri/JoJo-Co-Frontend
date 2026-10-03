@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../utils/api.js';
 import { getVideoDeliveryUrl, getVideoPosterUrl } from '../../utils/cloudinaryVideo.js';
-import { fetchCatalogProducts, deleteProduct } from '../../store/slices/productSlice.js';
+import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import {
   createCategory,
   updateCategory,
@@ -139,19 +140,20 @@ const CategoryManagerRow = ({ category, onRename, onAddSubcategory, onRemoveSubc
 const ProductForm = () => {
   const dispatch = useDispatch();
   const { products } = useSelector((state) => state.products);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { categories } = useSelector((state) => state.categories);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoryActionPending, setIsCategoryActionPending] = useState(false);
   const [categoryActionError, setCategoryActionError] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState(emptyFormData);
   // Id of the live product being edited, or null when the form is creating a new one.
   const [editingId, setEditingId] = useState(null);
   // The product's photos, in display order — the product page shows them all and
   // lets shoppers flip between them.
   const [uploadedImages, setUploadedImages] = useState([]);
-  // Photos (a subset of uploadedImages) flagged as size charts: shown in the product-page
-  // gallery but kept off the home page strip and never used as a cover photo.
+  // Size chart image(s), uploaded separately from the photos. The product page shows
+  // them behind a "View size chart" link — never in the gallery, home strip or as a cover.
   const [sizeChartUrls, setSizeChartUrls] = useState([]);
   // Optional short clip, stored separately from the photos (see Product.js).
   const [lookbookVideo, setLookbookVideo] = useState(null);
@@ -169,13 +171,6 @@ const ProductForm = () => {
   useEffect(() => {
     dispatch(fetchCatalogProducts({ limit: 50 }));
   }, [dispatch]);
-
-  const handleDelete = async (product) => {
-    if (!window.confirm(`Delete "${product.title}"? This cannot be undone.`)) return;
-    setDeletingId(product._id);
-    await dispatch(deleteProduct(product._id));
-    setDeletingId(null);
-  };
 
   const runCategoryAction = async (thunk) => {
     setIsCategoryActionPending(true);
@@ -259,6 +254,9 @@ const ProductForm = () => {
   const handleOpenUploadWidget = () =>
     openImageUploadWidget((url) => setUploadedImages((prev) => (prev.includes(url) ? prev : [...prev, url])));
 
+  const handleOpenSizeChartWidget = () =>
+    openImageUploadWidget((url) => setSizeChartUrls((prev) => (prev.includes(url) ? prev : [...prev, url])));
+
   const handleOpenVideoUploadWidget = async () => {
     setError(null);
     const cloudinary = await loadCloudinaryWidget();
@@ -328,10 +326,12 @@ const ProductForm = () => {
   // any legacy color untouched in a hidden field so saving never breaks the
   // stock/order matching of products created before shades were removed.
   const handleStartEdit = (product) => {
+    // Legacy products flagged a chart inside images[] — it now lives in the Size Chart section.
+    const charts = product.sizeChartUrls || [];
     const photos = [];
     (product.images || []).forEach((group) =>
       group.urls.forEach((url) => {
-        if (!photos.includes(url)) photos.push(url);
+        if (!photos.includes(url) && !charts.includes(url)) photos.push(url);
       })
     );
 
@@ -346,7 +346,7 @@ const ProductForm = () => {
       tags: (product.tags || []).join(', '),
     });
     setUploadedImages(photos);
-    setSizeChartUrls((product.sizeChartUrls || []).filter((url) => photos.includes(url)));
+    setSizeChartUrls([...new Set(charts)]);
     setLookbookVideo(
       product.lookbookVideo?.url
         ? { url: product.lookbookVideo.url, posterUrl: product.lookbookVideo.posterUrl }
@@ -366,6 +366,17 @@ const ProductForm = () => {
     setSuccess(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // "Edit" on the Published Products page lands here with the product id in router state.
+  useEffect(() => {
+    const editId = location.state?.editProductId;
+    if (!editId || editingId === editId) return;
+    const product = products.find((p) => p._id === editId);
+    if (!product) return;
+    handleStartEdit(product);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, products]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -393,7 +404,7 @@ const ProductForm = () => {
         title: formData.title,
         description: formData.description,
         basePrice: Number(formData.basePrice),
-        salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
+        salePrice: Number(formData.salePrice) > 0 ? Number(formData.salePrice) : undefined,
         category: formData.category,
         subcategory: formData.subcategory,
         tags: formData.tags
@@ -401,7 +412,7 @@ const ProductForm = () => {
           .map((t) => t.trim())
           .filter(Boolean),
         images: uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : [],
-        sizeChartUrls: sizeChartUrls.filter((url) => uploadedImages.includes(url)),
+        sizeChartUrls,
         lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => ({
           size: v.size,
@@ -416,7 +427,7 @@ const ProductForm = () => {
         // null (not undefined) so the server clears a removed sale price / video.
         await api.put(`/products/${editingId}`, {
           ...payload,
-          salePrice: formData.salePrice !== '' ? Number(formData.salePrice) : null,
+          salePrice: Number(formData.salePrice) > 0 ? Number(formData.salePrice) : null,
           lookbookVideo: lookbookVideo || null,
         });
       } else {
@@ -584,9 +595,8 @@ const ProductForm = () => {
                   <h2 className="font-serif text-lg text-brand">Product Photos</h2>
                   <p className="text-xs text-white/40 -mt-2">
                     Upload as many photos as you like — shoppers can flip between all of them on the product page. The
-                    first photo is the cover shown in the catalog and on the home page. Tick <strong>Size chart</strong> on
-                    a photo of a size chart: it still shows on the product page, but never on the home page strip or as
-                    the cover.
+                    first photo is the cover shown in the catalog and on the home page. Size charts go in their own
+                    section below.
                   </p>
                   <div className="flex flex-col gap-4">
                     <button
@@ -603,18 +613,6 @@ const ProductForm = () => {
                         {uploadedImages.map((url, index) => (
                           <div key={url} className="relative aspect-square overflow-hidden bg-white/5">
                             <img src={url} alt="Uploaded lookbook asset" className="h-full w-full object-cover" />
-                            <label className="absolute inset-x-1 bottom-1 flex cursor-pointer items-center justify-center gap-1 bg-ink/80 border border-white/20 px-2 py-0.5 text-[9px] uppercase tracking-widest text-white/70">
-                              <input
-                                type="checkbox"
-                                checked={sizeChartUrls.includes(url)}
-                                onChange={(e) =>
-                                  setSizeChartUrls((prev) => (e.target.checked ? [...prev, url] : prev.filter((u) => u !== url)))
-                                }
-                                disabled={isSubmitting}
-                                className="h-3 w-3 accent-brand"
-                              />
-                              Size chart
-                            </label>
                             {index === 0 ? (
                               <span className="absolute top-1 left-1 bg-brand-strong px-2 py-0.5 text-[9px] uppercase tracking-widest text-white">
                                 Cover
@@ -631,10 +629,7 @@ const ProductForm = () => {
                             )}
                             <button
                               type="button"
-                              onClick={() => {
-                                setUploadedImages((prev) => prev.filter((u) => u !== url));
-                                setSizeChartUrls((prev) => prev.filter((u) => u !== url));
-                              }}
+                              onClick={() => setUploadedImages((prev) => prev.filter((u) => u !== url))}
                               disabled={isSubmitting}
                               aria-label="Remove image"
                               className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center bg-ink/80 border border-white/20 text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
@@ -646,6 +641,41 @@ const ProductForm = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Section A1 — size chart */}
+                <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
+                  <h2 className="font-serif text-lg text-brand">Size Chart</h2>
+                  <p className="text-xs text-white/40 -mt-2">
+                    Optional — shoppers get a "View size chart" link beside the size picker on the product page, which
+                    opens this image.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenSizeChartWidget}
+                    disabled={isSubmitting}
+                    className="border border-brand text-brand px-4 py-4 text-xs uppercase tracking-widest transition-colors duration-300 hover:bg-brand hover:text-white disabled:opacity-60"
+                  >
+                    Upload Size Chart
+                  </button>
+                  {sizeChartUrls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {sizeChartUrls.map((url) => (
+                        <div key={url} className="relative aspect-square overflow-hidden bg-white/5">
+                          <img src={url} alt="Size chart" className="h-full w-full object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => setSizeChartUrls((prev) => prev.filter((u) => u !== url))}
+                            disabled={isSubmitting}
+                            aria-label="Remove size chart"
+                            className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center bg-ink/80 border border-white/20 text-white/70 transition-colors duration-200 hover:border-red-400 hover:text-red-400 disabled:opacity-40"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Section A2 — optional short lookbook video */}
@@ -836,69 +866,6 @@ const ProductForm = () => {
                   : 'Publish Clothing Article to Live Catalog'}
             </button>
           </form>
-
-          {/* Published products — inventory management */}
-          <div className="border border-white/10 bg-surface/30 p-6 flex flex-col gap-6">
-            <h2 className="font-serif text-lg text-brand">Published Products</h2>
-
-            {products.length === 0 ? (
-              <p className="text-sm text-white/50">No products published yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-white/40">
-                      <th className="py-4 pr-6 font-medium">Title</th>
-                      <th className="py-4 pr-6 font-medium">Category</th>
-                      <th className="py-4 pr-6 font-medium">Price</th>
-                      <th className="py-4 pr-6 font-medium">Total Stock</th>
-                      <th className="py-4 font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((product) => {
-                      const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
-                      return (
-                        <tr key={product._id} className="border-b border-white/10">
-                          <td className="py-4 pr-6 text-white/80">{product.title}</td>
-                          <td className="py-4 pr-6 text-white/50">{product.category}</td>
-                          <td className="py-4 pr-6 font-mono text-white/80">
-                            ₹{product.salePrice ?? product.basePrice}
-                          </td>
-                          <td className="py-4 pr-6">
-                            <span className={totalStock === 0 ? 'text-red-400' : 'text-white/80'}>
-                              {totalStock}
-                            </span>
-                          </td>
-                          <td className="py-4"><div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleStartEdit(product)}
-                              disabled={isSubmitting}
-                              className={`border px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-brand hover:text-brand disabled:opacity-60 ${
-                                editingId === product._id ? 'border-brand text-brand' : 'border-white/15 text-white/50'
-                              }`}
-                            >
-                              {editingId === product._id ? 'Editing' : 'Edit'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(product)}
-                              disabled={deletingId === product._id}
-                              className="border border-white/15 text-white/50 px-4 py-2 text-xs uppercase tracking-widest transition-colors duration-300 hover:border-red-400 hover:text-red-400 disabled:opacity-60"
-                            >
-                              {deletingId === product._id ? 'Deleting...' : 'Delete'}
-                            </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </section>
       </div>
     </div>

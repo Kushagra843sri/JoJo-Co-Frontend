@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMyOrders } from '../../store/slices/ordersSlice.js';
 import { logoutUser, updateProfile } from '../../store/slices/authSlice.js';
-import { getCoverPhoto } from '../../utils/productImages.js';
+import { getCoverPhoto, getUnitPrice } from '../../utils/productImages.js';
 import { fetchWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
@@ -239,7 +239,7 @@ const WishlistPanel = () => {
               <Link to={`/product/${product._id}`} className="font-serif text-lg text-brand hover:underline">
                 {product.title}
               </Link>
-              <p className="text-sm text-white/60">₹{product.salePrice ?? product.basePrice}</p>
+              <p className="text-sm text-white/60">₹{getUnitPrice(product)}</p>
               <button
                 type="button"
                 onClick={() => dispatch(removeFromWishlist(product._id))}

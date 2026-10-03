@@ -7,7 +7,7 @@ import Footer from '../../components/Footer.jsx';
 import GlowOrbs from '../../components/GlowOrbs.jsx';
 import MarqueeStrip from '../../components/MarqueeStrip.jsx';
 import { useReveal } from '../../hooks/useReveal.js';
-import { getCoverPhoto, getShowcasePhotos } from '../../utils/productImages.js';
+import { getCoverPhoto, getShowcasePhotos, getUnitPrice, hasSale } from '../../utils/productImages.js';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/jojo.and.c0mpany/';
 
@@ -99,12 +99,12 @@ const Home = () => {
           className="relative z-10 flex flex-col items-center text-center gap-6 px-4 sm:px-8 transition-transform duration-150 ease-out will-change-transform"
           style={{ transform: `rotateX(${heroTilt.y}deg) rotateY(${heroTilt.x}deg)` }}
         >
-          <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">
-            Delhi Lanes To Dystopia
-          </span>
           <h1 className="font-serif text-white text-5xl md:text-7xl leading-tight max-w-3xl">
-            A wearable <span className="text-gradient-brand">movement</span>
+            Delhi Lanes To <span className="text-gradient-brand">Dystopia</span>
           </h1>
+          <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">
+            A wearable movement
+          </span>
           <p className="text-white/60 max-w-md text-base">
             Gender fluid. Every piece helps feed a life.
           </p>
@@ -182,7 +182,7 @@ const Home = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {products.map((product) => {
               const imageUrl = getCoverPhoto(product);
-              const onSale = product.salePrice != null;
+              const onSale = hasSale(product);
 
               return (
                 <Link key={product._id} to={`/product/${product._id}`} className="flex flex-col gap-4">
@@ -196,7 +196,7 @@ const Home = () => {
                   </div>
                   <div className="flex flex-col gap-2">
                     <h3 className="font-serif text-lg text-brand">{product.title}</h3>
-                    <p className="text-sm text-white/60">₹{product.salePrice ?? product.basePrice}</p>
+                    <p className="text-sm text-white/60">₹{getUnitPrice(product)}</p>
                   </div>
                 </Link>
               );
