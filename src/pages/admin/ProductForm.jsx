@@ -14,6 +14,15 @@ import Select, { SelectOption } from '../../components/Select.jsx';
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
 
+// A variant's stored size label is "M", "30", or "M / 30" — the form edits the letter and
+// number in separate columns, so each can be used alone without clashing with the other.
+const composeSize = (letter, number) => [letter, (number || '').trim()].filter(Boolean).join(' / ');
+const splitSize = (label = '') => {
+  const [first, ...rest] = label.split(' / ');
+  if (sizeOptions.includes(first)) return { size: first, sizeNumber: rest.join(' / ') };
+  return { size: '', sizeNumber: label };
+};
+
 const labelClasses = 'text-xs uppercase tracking-widest text-white/40';
 const inputClasses =
   'w-full bg-transparent border border-white/15 px-4 py-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60';
@@ -157,7 +166,7 @@ const ProductForm = () => {
   const [sizeChartUrls, setSizeChartUrls] = useState([]);
   // Optional short clip, stored separately from the photos (see Product.js).
   const [lookbookVideo, setLookbookVideo] = useState(null);
-  const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
+  const [variants, setVariants] = useState(() => [{ id: 'variant-1', size: 'M', sizeNumber: '', sku: '', stock: 0 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -303,7 +312,7 @@ const ProductForm = () => {
   };
 
   const addVariantRow = () => {
-    setVariants((prev) => [...prev, { id: `variant-${Date.now()}`, size: 'M', sku: '', stock: 0 }]);
+    setVariants((prev) => [...prev, { id: `variant-${Date.now()}`, size: 'M', sizeNumber: '', sku: '', stock: 0 }]);
   };
 
   const removeVariantRow = (id) => {
@@ -316,7 +325,7 @@ const ProductForm = () => {
     setUploadedImages([]);
     setSizeChartUrls([]);
     setLookbookVideo(null);
-    setVariants([{ id: 'variant-1', size: 'M', sku: '', stock: 0 }]);
+    setVariants([{ id: 'variant-1', size: 'M', sizeNumber: '', sku: '', stock: 0 }]);
     setError(null);
     setSuccess(false);
   };
@@ -355,7 +364,7 @@ const ProductForm = () => {
     setVariants(
       (product.variants || []).map((v, index) => ({
         id: `variant-${index + 1}`,
-        size: v.size,
+        ...splitSize(v.size),
         color: v.color || '',
         colorHex: v.colorHex,
         sku: v.sku,
@@ -387,13 +396,17 @@ const ProductForm = () => {
       setError('Title, Base Price, and Category are required.');
       return;
     }
+    if (variants.some((v) => !composeSize(v.size, v.sizeNumber))) {
+      setError('Every variant row needs a Size, a Size No., or both.');
+      return;
+    }
     if (variants.some((v) => !v.sku.trim())) {
       setError('Every variant row needs a SKU.');
       return;
     }
-    const variantKeys = variants.map((v) => `${v.size}|${(v.color || '').toLowerCase()}`);
+    const variantKeys = variants.map((v) => `${composeSize(v.size, v.sizeNumber).toLowerCase()}|${(v.color || '').toLowerCase()}`);
     if (new Set(variantKeys).size !== variantKeys.length) {
-      setError('Each size can only be listed once.');
+      setError('Each size / size number combination can only be listed once.');
       return;
     }
 
@@ -415,7 +428,7 @@ const ProductForm = () => {
         sizeChartUrls,
         lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => ({
-          size: v.size,
+          size: composeSize(v.size, v.sizeNumber),
           ...(v.color && { color: v.color }),
           ...(v.colorHex && { colorHex: v.colorHex }),
           sku: v.sku,
@@ -775,6 +788,7 @@ const ProductForm = () => {
                       <thead>
                         <tr className="border-b border-white/10 text-left text-xs uppercase tracking-widest text-white/40">
                           <th className="py-4 pr-6 font-medium">Size</th>
+                          <th className="py-4 pr-6 font-medium">Size No.</th>
                           <th className="py-4 pr-6 font-medium">SKU</th>
                           <th className="py-4 pr-6 font-medium">Stock</th>
                           <th className="py-4 font-medium"></th>
@@ -790,12 +804,26 @@ const ProductForm = () => {
                                 disabled={isSubmitting}
                                 className="bg-ink border border-white/15 px-4 py-2 text-sm text-white focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
                               >
+                                <SelectOption value="">—</SelectOption>
                                 {sizeOptions.map((size) => (
                                   <SelectOption key={size} value={size}>
                                     {size}
                                   </SelectOption>
                                 ))}
                               </Select>
+                            </td>
+                            <td className="py-4 pr-6">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={row.sizeNumber || ''}
+                                onChange={(e) => handleVariantChange(row.id, 'sizeNumber', e.target.value)}
+                                disabled={isSubmitting}
+                                autoComplete="off"
+                                placeholder="28"
+                                aria-label="Size number"
+                                className="w-20 bg-transparent border border-white/15 px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand transition-colors duration-300 disabled:opacity-60"
+                              />
                             </td>
                             <td className="py-4 pr-6">
                               <input

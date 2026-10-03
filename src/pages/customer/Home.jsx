@@ -179,23 +179,23 @@ const Home = () => {
         )}
 
         {!isLoading && products.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-6 sm:gap-8">
             {products.map((product) => {
               const imageUrl = getCoverPhoto(product);
               const onSale = hasSale(product);
 
               return (
-                <Link key={product._id} to={`/product/${product._id}`} className="flex flex-col gap-4">
+                <Link key={product._id} to={`/product/${product._id}`} className="flex min-w-0 flex-col gap-3 sm:gap-4">
                   <div className="tilt-card relative aspect-[4/5] bg-white/5 overflow-hidden">
                     {imageUrl && (
                       <img src={imageUrl} alt={product.title} className="h-full w-full object-cover" />
                     )}
-                    <span className="absolute top-4 left-4 btn-glow text-white text-xs uppercase tracking-widest px-4 py-2">
+                    <span className="absolute top-2 left-2 sm:top-4 sm:left-4 btn-glow text-white text-[10px] sm:text-xs uppercase tracking-widest px-2 py-1 sm:px-4 sm:py-2">
                       {onSale ? 'Sale' : 'New'}
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <h3 className="font-serif text-lg text-brand">{product.title}</h3>
+                    <h3 className="font-serif text-base sm:text-lg text-brand">{product.title}</h3>
                     <p className="text-sm text-white/60">₹{getUnitPrice(product)}</p>
                   </div>
                 </Link>

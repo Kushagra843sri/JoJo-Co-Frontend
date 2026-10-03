@@ -350,7 +350,7 @@ const ProductDetail = () => {
                           setAddedMessage(null);
                         }}
                         title={outOfStock ? 'Out of stock' : undefined}
-                        className={`h-12 w-12 flex items-center justify-center border text-sm transition-colors duration-300 ${
+                        className={`${variant.size.includes(' / ') ? 'h-14 w-14 flex-col leading-tight' : 'h-12 min-w-12 px-2'} flex items-center justify-center border text-sm transition-colors duration-300 ${
                           outOfStock
                             ? 'border-white/10 text-white/20 line-through cursor-not-allowed'
                             : variant.size === selectedSize
@@ -358,7 +358,11 @@ const ProductDetail = () => {
                               : 'border-white/15 text-white/60 hover:border-brand hover:text-brand'
                         }`}
                       >
-                        {variant.size}
+                        {variant.size.split(' / ').map((part, i) => (
+                          <span key={i} className={i > 0 ? 'text-[10px] opacity-70' : undefined}>
+                            {part}
+                          </span>
+                        ))}
                       </button>
                     );
                   })}
