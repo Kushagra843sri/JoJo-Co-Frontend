@@ -295,6 +295,10 @@ const Checkout = () => {
                 <span>Subtotal</span>
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span>Shipping</span>
+                <span className="text-brand">Free delivery Pan India</span>
+              </div>
               <div className="flex items-center justify-between text-base font-semibold text-brand pt-2 border-t border-white/10">
                 <span>Grand Total</span>
                 <span>₹{grandTotal.toFixed(2)}</span>

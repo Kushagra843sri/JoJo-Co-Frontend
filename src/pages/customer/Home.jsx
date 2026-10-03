@@ -100,7 +100,7 @@ const Home = () => {
           style={{ transform: `rotateX(${heroTilt.y}deg) rotateY(${heroTilt.x}deg)` }}
         >
           <h1 className="font-serif text-white text-5xl md:text-7xl leading-tight max-w-3xl">
-            Delhi Lanes To <span className="text-gradient-brand">Dystopia</span>
+            <span className="text-gradient-brand">Delhi Lanes To</span> Dystopia
           </h1>
           <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">
             A wearable movement
