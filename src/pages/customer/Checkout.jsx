@@ -54,8 +54,8 @@ const Checkout = () => {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.05;
-  const grandTotal = subtotal + tax;
+  // No tax is charged — must match TAX_RATE in the backend's paymentController.
+  const grandTotal = subtotal;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -294,10 +294,6 @@ const Checkout = () => {
               <div className="flex items-center justify-between">
                 <span>Subtotal</span>
                 <span>₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Estimated Tax (5%)</span>
-                <span>₹{tax.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between text-base font-semibold text-brand pt-2 border-t border-white/10">
                 <span>Grand Total</span>
