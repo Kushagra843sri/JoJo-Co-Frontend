@@ -38,6 +38,7 @@ const emptyFormData = {
   category: '',
   subcategory: '',
   tags: '',
+  isBestSeller: false,
 };
 
 const MAX_VIDEO_SECONDS = 15;
@@ -353,6 +354,7 @@ const ProductForm = () => {
       category: product.category || '',
       subcategory: product.subcategory || '',
       tags: (product.tags || []).join(', '),
+      isBestSeller: !!product.isBestSeller,
     });
     setUploadedImages(photos);
     setSizeChartUrls([...new Set(charts)]);
@@ -425,6 +427,7 @@ const ProductForm = () => {
           .map((t) => t.trim())
           .filter(Boolean),
         images: uploadedImages.length > 0 ? [{ color: BASE_IMAGE_GROUP, urls: uploadedImages }] : [],
+        isBestSeller: !!formData.isBestSeller,
         sizeChartUrls,
         lookbookVideo: lookbookVideo || undefined,
         variants: variants.map((v) => ({
@@ -599,6 +602,19 @@ const ProductForm = () => {
                     className={inputClasses}
                   />
                 </div>
+
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.isBestSeller}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, isBestSeller: e.target.checked }))}
+                    disabled={isSubmitting}
+                    className="h-4 w-4 accent-brand"
+                  />
+                  <span className="text-sm text-white/70">
+                    Best Seller <span className="text-white/40">— show on the home page</span>
+                  </span>
+                </label>
               </div>
 
               {/* Right form column — apparel data matrices */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
@@ -45,6 +45,21 @@ const Catalog = () => {
 
     return () => clearTimeout(timeoutId);
   }, [dispatch, selectedCategory, selectedSubcategory, selectedSize, sortOrder]);
+
+  // Products grouped under their category heading (case-insensitive match, as the
+  // API filters). Admin-defined category order first, any stragglers after.
+  const groups = useMemo(() => {
+    const byKey = new Map();
+    products.forEach((product) => {
+      const label = (product.category || 'Other').trim() || 'Other';
+      const key = label.toLowerCase();
+      if (!byKey.has(key)) byKey.set(key, { label, products: [] });
+      byKey.get(key).products.push(product);
+    });
+    const order = (categories || []).map((c) => c.name.toLowerCase());
+    const rank = (key) => (order.includes(key) ? order.indexOf(key) : order.length);
+    return [...byKey.entries()].sort((a, b) => rank(a[0]) - rank(b[0])).map(([, g]) => g);
+  }, [products, categories]);
 
   return (
     <div className="w-full bg-ink min-h-screen">
@@ -130,8 +145,14 @@ const Catalog = () => {
 
           {/* Product showcase grid — live data */}
           {!isLoading && !error && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-6 sm:gap-8">
-              {products.map((product) => {
+            <div className="flex flex-col gap-12">
+              {groups.map((group) => (
+                <div key={group.label} className="flex flex-col gap-6">
+                  {groups.length > 1 && (
+                    <h2 className="font-serif text-2xl text-brand border-b border-white/10 pb-3">{group.label}</h2>
+                  )}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-6 sm:gap-8">
+              {group.products.map((product) => {
                 const imageUrl = getCoverPhoto(product);
                 const onSale = hasSale(product);
 
@@ -154,6 +175,9 @@ const Catalog = () => {
                   </Link>
                 );
               })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
+import api from '../../utils/api.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import GlowOrbs from '../../components/GlowOrbs.jsx';
@@ -14,7 +15,6 @@ const INSTAGRAM_URL = 'https://www.instagram.com/jojo.and.c0mpany/';
 const categories = [
   { id: 1, label: 'New Arrivals' },
   { id: 2, label: 'Core Collection' },
-  { id: 3, label: 'Editorial' },
 ];
 
 const testimonials = [
@@ -37,7 +37,9 @@ const testimonials = [
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { products, isLoading } = useSelector((state) => state.products);
+  const { products } = useSelector((state) => state.products);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [bestSellersLoading, setBestSellersLoading] = useState(true);
   const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
 
   const [aboutRef, aboutVisible] = useReveal();
@@ -49,6 +51,16 @@ const Home = () => {
   useEffect(() => {
     dispatch(fetchCatalogProducts({ sort: 'newest', limit: 4 }));
   }, [dispatch]);
+
+  // Products ticked "Best Seller" in the admin form. Fetched locally (not via the
+  // store) because the store's list also feeds the hero photo strip below.
+  useEffect(() => {
+    api
+      .get('/products', { params: { bestSeller: true, limit: 50, sort: 'newest' } })
+      .then(({ data }) => setBestSellers(data.products))
+      .catch(() => setBestSellers([]))
+      .finally(() => setBestSellersLoading(false));
+  }, []);
 
   // Every clothing photo (size charts excluded) across the fetched products, doubled below so the
   // strip can loop seamlessly (a plain translateX(-100%) would snap back to
@@ -140,7 +152,7 @@ const Home = () => {
         ref={categoryRef}
         className={`reveal-on-scroll ${categoryVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {categories.map((category) => (
             <Link
               key={category.id}
@@ -156,31 +168,21 @@ const Home = () => {
         </div>
       </section>
 
-      {/* New Arrivals product grid */}
-      <section
-        ref={arrivalsRef}
-        className={`reveal-on-scroll ${arrivalsVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
-      >
-        <div className="flex items-baseline justify-between mb-12">
-          <h2 className="font-serif text-3xl text-brand">New Arrivals</h2>
-          <span className="text-xs uppercase tracking-widest text-white/40">
-            {String(products.length).padStart(2, '0')} Pieces
-          </span>
-        </div>
+      {/* Best Sellers product grid — hidden until at least one product is ticked */}
+      {!bestSellersLoading && bestSellers.length > 0 && (
+        <section
+          ref={arrivalsRef}
+          className={`reveal-on-scroll ${arrivalsVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
+        >
+          <div className="flex items-baseline justify-between mb-12">
+            <h2 className="font-serif text-3xl text-brand">Best Sellers</h2>
+            <span className="text-xs uppercase tracking-widest text-white/40">
+              {String(bestSellers.length).padStart(2, '0')} Pieces
+            </span>
+          </div>
 
-        {isLoading && (
-          <p className="text-sm uppercase tracking-widest text-white/40 animate-pulse">Loading new arrivals...</p>
-        )}
-
-        {!isLoading && products.length === 0 && (
-          <p className="text-sm text-white/50 border border-white/10 px-8 py-12 text-center">
-            No products published yet — check back soon.
-          </p>
-        )}
-
-        {!isLoading && products.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-6 sm:gap-8">
-            {products.map((product) => {
+            {bestSellers.map((product) => {
               const imageUrl = getCoverPhoto(product);
               const onSale = hasSale(product);
 
@@ -191,7 +193,7 @@ const Home = () => {
                       <img src={imageUrl} alt={product.title} className="h-full w-full object-cover" />
                     )}
                     <span className="absolute top-2 left-2 sm:top-4 sm:left-4 btn-glow text-white text-[10px] sm:text-xs uppercase tracking-widest px-2 py-1 sm:px-4 sm:py-2">
-                      {onSale ? 'Sale' : 'New'}
+                      {onSale ? 'Sale' : 'Best Seller'}
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -202,8 +204,8 @@ const Home = () => {
               );
             })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Testimonials */}
       <section
