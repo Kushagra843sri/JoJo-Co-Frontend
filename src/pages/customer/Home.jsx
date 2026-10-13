@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import api from '../../utils/api.js';
 import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import GlowOrbs from '../../components/GlowOrbs.jsx';
 import MarqueeStrip from '../../components/MarqueeStrip.jsx';
 import { useReveal } from '../../hooks/useReveal.js';
-import { getCoverPhoto, getShowcasePhotos, getUnitPrice, hasSale } from '../../utils/productImages.js';
+import { getCoverPhoto, getUnitPrice, hasSale } from '../../utils/productImages.js';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/jojo.and.c0mpany/';
 
@@ -36,8 +34,6 @@ const testimonials = [
 ];
 
 const Home = () => {
-  const dispatch = useDispatch();
-  const { products } = useSelector((state) => state.products);
   const [bestSellers, setBestSellers] = useState([]);
   const [bestSellersLoading, setBestSellersLoading] = useState(true);
   const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
@@ -46,10 +42,6 @@ const Home = () => {
   const [categoryRef, categoryVisible] = useReveal();
   const [testimonialsRef, testimonialsVisible] = useReveal();
   const [cultRef, cultVisible] = useReveal();
-
-  useEffect(() => {
-    dispatch(fetchCatalogProducts({ sort: 'newest', limit: 4 }));
-  }, [dispatch]);
 
   // Products ticked "Best Seller" in the admin form. Fetched locally (not via the
   // store) because the store's list also feeds the hero photo strip below.
@@ -60,15 +52,6 @@ const Home = () => {
       .catch(() => setBestSellers([]))
       .finally(() => setBestSellersLoading(false));
   }, []);
-
-  // Every clothing photo (size charts excluded) across the fetched products, doubled below so the
-  // strip can loop seamlessly (a plain translateX(-100%) would snap back to
-  // start; -50% on a doubled list is invisible since the second half is an
-  // exact copy of the first).
-  const heroImages = useMemo(
-    () => products.flatMap((product) => getShowcasePhotos(product)),
-    [products]
-  );
 
   // Lightweight cursor-driven 3D tilt on the hero copy — pure CSS transform,
   // no WebGL/three.js, so it's cheap on low-end phones and degrades to a flat
@@ -95,15 +78,19 @@ const Home = () => {
         onMouseMove={handleHeroMouseMove}
         onMouseLeave={resetHeroTilt}
       >
-        {heroImages.length > 0 && (
-          <div className="absolute inset-0 flex animate-hero-scroll opacity-60">
-            {[...heroImages, ...heroImages].map((url, index) => (
-              <div key={`${url}-${index}`} className="h-full w-[50vw] sm:w-[33.33vw] md:w-[25vw] flex-none">
-                <img src={url} alt="" className="h-full w-full object-cover" />
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Silent looping brand video behind the headline. Muted + playsInline are
+            required for autoplay on mobile; the poster shows while it loads. */}
+        <video
+          className="absolute inset-0 h-full w-full object-cover opacity-60"
+          src="/hero.mp4"
+          poster="/hero-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-ink" />
 
         <div
