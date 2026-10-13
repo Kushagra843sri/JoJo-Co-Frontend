@@ -10,11 +10,7 @@ import ImageLightbox from '../../components/ImageLightbox.jsx';
 import useSwipe from '../../hooks/useSwipe.js';
 import { getCoverPhoto, getShowcasePhotos, getSizeCharts, getUnitPrice, hasSale } from '../../utils/productImages.js';
 import { getVideoDeliveryUrl } from '../../utils/cloudinaryVideo.js';
-
-const dummyReviews = [
-  { id: 1, author: 'Ananya R.', rating: 5, text: 'Premium heavy-weight fabric, beautiful drape. 5/5 stars.' },
-  { id: 2, author: 'Rohan K.', rating: 4, text: 'True to size and holds shape after washing. 4/5 stars.' },
-];
+import ProductReviews from '../../components/ProductReviews.jsx';
 
 // Image-to-image transition: when `src` changes (the shopper flips to another
 // photo) the new photo is stacked on top and fades in only once it
@@ -79,7 +75,6 @@ const ProductDetail = () => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
   const [sizeChartIndex, setSizeChartIndex] = useState(0);
-  const [isReviewsOpen, setIsReviewsOpen] = useState(true);
   const [addedMessage, setAddedMessage] = useState(null);
 
   useEffect(() => {
@@ -418,31 +413,7 @@ const ProductDetail = () => {
               <p className="text-xs text-white/40">Since every piece is made to order we don’t offer COD.</p>
             </div>
 
-            <div className="border border-white/10">
-              <button
-                type="button"
-                onClick={() => setIsReviewsOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-6 py-4 text-left"
-                aria-expanded={isReviewsOpen}
-              >
-                <span className="text-xs uppercase tracking-widest text-white/40">
-                  Customer Reviews ({dummyReviews.length})
-                </span>
-                <span className="text-white/30 text-sm">{isReviewsOpen ? '−' : '+'}</span>
-              </button>
-              {isReviewsOpen && (
-                <div className="flex flex-col gap-4 px-6 pb-6">
-                  {dummyReviews.map((review) => (
-                    <div key={review.id} className="flex flex-col gap-2 border-t border-white/5 pt-4">
-                      <span className="text-sm font-medium text-brand">
-                        {review.author} — {review.rating}/5
-                      </span>
-                      <p className="text-sm text-white/60">{review.text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ProductReviews productId={currentProduct._id} />
           </div>
         </div>
       )}

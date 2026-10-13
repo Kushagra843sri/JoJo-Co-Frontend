@@ -23,24 +23,6 @@ const reviewShots = [
   { src: '/reviews/review-4.jpg', width: 800, height: 1416, alt: 'Customer message: really like the fit and the look of the T-shirt' },
 ];
 
-const testimonials = [
-  {
-    id: 1,
-    quote: 'The fabric weight is unlike anything I’ve bought online — it actually looks better in person.',
-    author: 'Aisha M.',
-  },
-  {
-    id: 2,
-    quote: 'Fit was true to size and delivery was faster than expected. Already ordered a second piece.',
-    author: 'Rohan K.',
-  },
-  {
-    id: 3,
-    quote: 'Understated, well-made, and the kind of pieces that don’t date after one season.',
-    author: 'Priya S.',
-  },
-];
-
 const Home = () => {
   const [bestSellers, setBestSellers] = useState([]);
   const [bestSellersLoading, setBestSellersLoading] = useState(true);
@@ -48,7 +30,7 @@ const Home = () => {
 
   const [aboutRef, aboutVisible] = useReveal();
   const [categoryRef, categoryVisible] = useReveal();
-  const [testimonialsRef, testimonialsVisible] = useReveal();
+  const [dmsRef, dmsVisible] = useReveal();
   const [openShot, setOpenShot] = useState(null);
   const [cultRef, cultVisible] = useReveal();
 
@@ -209,35 +191,17 @@ const Home = () => {
         </section>
       )}
 
-      {/* Testimonials */}
+      {/* Customer DMs / stories */}
       <section
-        ref={testimonialsRef}
-        className={`reveal-on-scroll ${testimonialsVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-16 bg-surface overflow-hidden`}
+        ref={dmsRef}
+        className={`reveal-on-scroll ${dmsVisible ? 'is-visible' : ''} relative w-full px-4 sm:px-8 py-16 bg-surface overflow-hidden`}
       >
         <GlowOrbs />
-        <div className="relative z-10 flex flex-col items-center text-center gap-2 mb-12">
-          <span className="font-mono text-xs tracking-[0.2em] uppercase text-white/40">What Customers Say</span>
-          <h2 className="font-serif text-3xl text-brand">In Their Words</h2>
-        </div>
-
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {testimonials.map((testimonial) => (
-            <div
-              key={testimonial.id}
-              className="border border-white/10 bg-ink/80 backdrop-blur p-8 flex flex-col gap-6 transition-all duration-300 hover:border-brand/60 hover:shadow-[0_0_30px_-10px_rgba(168,85,247,0.4)] hover:-translate-y-1"
-            >
-              <span className="font-serif text-4xl text-brand-strong leading-none">“</span>
-              <p className="text-sm text-white/60 leading-relaxed flex-1">{testimonial.quote}</p>
-              <span className="text-xs uppercase tracking-widest text-white/40">— {testimonial.author}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Wall of love — real customer chats & stories, tap to enlarge */}
-        <div className="relative z-10 max-w-5xl mx-auto mt-20 flex flex-col items-center gap-10">
+        <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center gap-10">
           <div className="flex flex-col items-center text-center gap-2">
             <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">#jojocult</span>
-            <h3 className="font-serif text-2xl md:text-3xl text-gradient-brand">Straight From Our DMs</h3>
+            <h2 className="font-serif text-2xl md:text-3xl text-gradient-brand">Straight From Our DMs</h2>
           </div>
           <div className="columns-2 md:columns-4 gap-4 w-full">
             {reviewShots.map((shot, index) => (

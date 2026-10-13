@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../utils/api.js';
+import { loadCloudinaryWidget } from '../../utils/cloudinaryWidget.js';
 import { getVideoDeliveryUrl, getVideoPosterUrl } from '../../utils/cloudinaryVideo.js';
 import { fetchCatalogProducts } from '../../store/slices/productSlice.js';
 import {
@@ -10,6 +11,7 @@ import {
   deleteCategory,
 } from '../../store/slices/categorySlice.js';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
+import AdminProductReviews from '../../components/AdminProductReviews.jsx';
 import Select, { SelectOption } from '../../components/Select.jsx';
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
@@ -43,22 +45,6 @@ const emptyFormData = {
 
 const MAX_VIDEO_SECONDS = 15;
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-
-// Lazily injects Cloudinary's real upload widget script, caching window.cloudinary
-// so repeated calls (mount preload + the button click) never re-inject it.
-const loadCloudinaryWidget = () => {
-  return new Promise((resolve, reject) => {
-    if (window.cloudinary) {
-      resolve(window.cloudinary);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://upload-widget.cloudinary.com/global/all.js';
-    script.onload = () => resolve(window.cloudinary);
-    script.onerror = () => reject(new Error('Failed to load Cloudinary upload widget'));
-    document.body.appendChild(script);
-  });
-};
 
 // One row of the Manage Categories panel — keeps its own editable-name and
 // new-subcategory draft state local rather than lifting it into ProductForm,
@@ -910,6 +896,8 @@ const ProductForm = () => {
                   : 'Publish Clothing Article to Live Catalog'}
             </button>
           </form>
+
+          {editingId && <AdminProductReviews key={editingId} productId={editingId} />}
         </section>
       </div>
     </div>
