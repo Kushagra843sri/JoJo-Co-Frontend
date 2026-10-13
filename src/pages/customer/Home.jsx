@@ -44,7 +44,6 @@ const Home = () => {
 
   const [aboutRef, aboutVisible] = useReveal();
   const [categoryRef, categoryVisible] = useReveal();
-  const [arrivalsRef, arrivalsVisible] = useReveal();
   const [testimonialsRef, testimonialsVisible] = useReveal();
   const [cultRef, cultVisible] = useReveal();
 
@@ -170,10 +169,10 @@ const Home = () => {
 
       {/* Best Sellers product grid — hidden until at least one product is ticked */}
       {!bestSellersLoading && bestSellers.length > 0 && (
-        <section
-          ref={arrivalsRef}
-          className={`reveal-on-scroll ${arrivalsVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
-        >
+        // No scroll-reveal here: useReveal only observes the node present on first
+        // render, and this section mounts later (after the fetch), so it would stay
+        // at opacity 0 forever.
+        <section className="w-full px-4 sm:px-8 py-16">
           <div className="flex items-baseline justify-between mb-12">
             <h2 className="font-serif text-3xl text-brand">Best Sellers</h2>
             <span className="text-xs uppercase tracking-widest text-white/40">
