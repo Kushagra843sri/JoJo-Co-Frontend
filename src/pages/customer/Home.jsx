@@ -15,6 +15,14 @@ const categories = [
   { id: 2, label: 'Core Collection' },
 ];
 
+// Real customer DMs/stories the client shared; files live in public/reviews.
+const reviewShots = [
+  { src: '/reviews/review-1.jpg', width: 800, height: 1102, alt: 'Customer message: they’re lovely, the stickers look so dope too' },
+  { src: '/reviews/review-2.jpg', width: 800, height: 1260, alt: 'Customer story wearing JoJo & Co on stage: everyone loved the drip' },
+  { src: '/reviews/review-3.jpg', width: 800, height: 1406, alt: 'Customer styling JoJo & Co jorts with a leopard scarf' },
+  { src: '/reviews/review-4.jpg', width: 800, height: 1416, alt: 'Customer message: really like the fit and the look of the T-shirt' },
+];
+
 const testimonials = [
   {
     id: 1,
@@ -41,7 +49,15 @@ const Home = () => {
   const [aboutRef, aboutVisible] = useReveal();
   const [categoryRef, categoryVisible] = useReveal();
   const [testimonialsRef, testimonialsVisible] = useReveal();
+  const [openShot, setOpenShot] = useState(null);
   const [cultRef, cultVisible] = useReveal();
+
+  useEffect(() => {
+    if (!openShot) return undefined;
+    const onKey = (e) => e.key === 'Escape' && setOpenShot(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openShot]);
 
   // Products ticked "Best Seller" in the admin form. Fetched locally (not via the
   // store) because the store's list also feeds the hero photo strip below.
@@ -216,7 +232,62 @@ const Home = () => {
             </div>
           ))}
         </div>
+
+        {/* Wall of love — real customer chats & stories, tap to enlarge */}
+        <div className="relative z-10 max-w-5xl mx-auto mt-20 flex flex-col items-center gap-10">
+          <div className="flex flex-col items-center text-center gap-2">
+            <span className="font-mono text-xs tracking-[0.2em] uppercase text-brand">#jojocult</span>
+            <h3 className="font-serif text-2xl md:text-3xl text-gradient-brand">Straight From Our DMs</h3>
+          </div>
+          <div className="columns-2 md:columns-4 gap-4 w-full">
+            {reviewShots.map((shot, index) => (
+              <button
+                key={shot.src}
+                type="button"
+                onClick={() => setOpenShot(shot)}
+                aria-label={`Enlarge: ${shot.alt}`}
+                className={`group mb-4 block w-full break-inside-avoid overflow-hidden border border-white/10 bg-black transition-all duration-300 hover:border-brand/60 hover:shadow-[0_0_30px_-10px_rgba(168,85,247,0.5)] hover:-translate-y-1 ${
+                  index % 2 === 1 ? 'md:mt-8' : ''
+                }`}
+              >
+                <img
+                  src={shot.src}
+                  alt={shot.alt}
+                  width={shot.width}
+                  height={shot.height}
+                  loading="lazy"
+                  className="block h-auto w-full opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
+
+      {openShot && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={openShot.alt}
+          onClick={() => setOpenShot(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+        >
+          <button
+            type="button"
+            onClick={() => setOpenShot(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 h-10 w-10 border border-white/20 text-white/70 transition-colors duration-300 hover:border-brand hover:text-brand"
+          >
+            ✕
+          </button>
+          <img
+            src={openShot.src}
+            alt={openShot.alt}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full object-contain border border-white/10"
+          />
+        </div>
+      )}
 
       {/* Join The Cult — Instagram CTA */}
       <section
