@@ -54,8 +54,15 @@ export default productSlice.reducer;
 export const fetchCatalogProducts = (filters = {}) => async (dispatch) => {
   dispatch(fetchStart());
   try {
-    const { data } = await api.get('/products', { params: filters });
-    dispatch(fetchProductsSuccess(data));
+    // The API pages results (max 50 per request) and the catalog has no pager, so
+    // pull every page — otherwise only the first slice of products ever shows.
+    const first = (await api.get('/products', { params: { ...filters, limit: 50, page: 1 } })).data;
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(first.totalPages - 1, 0) }, (_, i) =>
+        api.get('/products', { params: { ...filters, limit: 50, page: i + 2 } }).then((r) => r.data.products)
+      )
+    );
+    dispatch(fetchProductsSuccess({ ...first, products: [...first.products, ...rest.flat()] }));
   } catch (err) {
     const message = err.response?.data?.message || 'Failed to load products';
     dispatch(fetchFailure(message));
