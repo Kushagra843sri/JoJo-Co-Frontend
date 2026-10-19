@@ -131,27 +131,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Category navigation strip */}
-      <section
-        ref={categoryRef}
-        className={`reveal-on-scroll ${categoryVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              to="/catalog"
-              className="group border border-white/10 px-8 py-12 flex flex-col items-center gap-2 transition-all duration-300 hover:border-brand hover:shadow-[0_0_30px_-8px_rgba(168,85,247,0.5)] hover:-translate-y-1"
-            >
-              <span className="font-serif text-2xl text-brand">{category.label}</span>
-              <span className="text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-hover:text-brand">
-                Explore
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* Best Sellers product grid — hidden until at least one product is ticked */}
       {!bestSellersLoading && bestSellers.length > 0 && (
         // No scroll-reveal here: useReveal only observes the node present on first
@@ -190,6 +169,27 @@ const Home = () => {
           </div>
         </section>
       )}
+
+      {/* Category navigation strip */}
+      <section
+        ref={categoryRef}
+        className={`reveal-on-scroll ${categoryVisible ? 'is-visible' : ''} w-full px-4 sm:px-8 py-16`}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              to="/catalog"
+              className="group border border-white/10 px-8 py-12 flex flex-col items-center gap-2 transition-all duration-300 hover:border-brand hover:shadow-[0_0_30px_-8px_rgba(168,85,247,0.5)] hover:-translate-y-1"
+            >
+              <span className="font-serif text-2xl text-brand">{category.label}</span>
+              <span className="text-xs uppercase tracking-widest text-white/40 transition-colors duration-300 group-hover:text-brand">
+                Explore
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Customer DMs / stories */}
       <section
